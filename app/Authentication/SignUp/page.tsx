@@ -1,13 +1,13 @@
-// app/page.tsx
-
+// app/Authentication/SignUp/page.tsx
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/supabase/supabaseClient';
-import { User, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-export default function SignIn() {
+export default function SignUp() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,40 +29,40 @@ export default function SignIn() {
     textInverse: '#FFFFFF',    // White
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const { data: profileData, error: profileError } = await supabase
+      const { data: existingUser, error: checkError } = await supabase
         .from('profiles')
-        .select('id, email, name, password, role')
+        .select('id')
         .eq('email', email)
         .single();
 
-      if (profileError) {
-        throw new Error('Invalid email or password');
+      if (existingUser) {
+        throw new Error('Email already in use');
       }
 
-      if (profileData.password !== password) {
-        throw new Error('Invalid email or password');
-      }
+      const { data, error: insertError } = await supabase
+        .from('profiles')
+        .insert([
+          { 
+            name, 
+            email, 
+            password,
+            role: 'student' 
+          }
+        ])
+        .select();
 
-      localStorage.setItem('user', JSON.stringify({
-        id: profileData.id,
-        email: profileData.email,
-        name: profileData.name,
-        role: profileData.role
-      }));
+      if (insertError) throw insertError;
 
-      if (profileData.role === 'admin') {
-        router.push('/Admin/AdminDashboard');
-      } else {
-        router.push('/Student/StudentDashboard');
-      }
+      router.push('/');
+      
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      setError(err.message || 'Failed to sign up');
     } finally {
       setLoading(false);
     }
@@ -79,19 +79,47 @@ export default function SignIn() {
       >
         <div className="px-8 py-6" style={{ backgroundColor: colors.primary }}>
           <h1 className="text-3xl font-bold text-center" style={{ color: colors.textInverse }}>
-            Sign In
+            Sign Up
           </h1>
         </div>
 
         <div className="px-8 py-10">
-          <form onSubmit={handleSignIn} className="space-y-8">
+          {error && <div className="p-3 mb-6 text-sm text-red-700 bg-red-100 rounded-lg">{error}</div>}
+          
+          <form onSubmit={handleSignUp} className="space-y-8">
+            <div className="space-y-2">
+              <label htmlFor="name" className="block text-sm font-medium" style={{ color: colors.textPrimary }}>
+                Full Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User className="h-5 w-5" style={{ color: colors.textTertiary }} />
+                </div>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="block w-full pl-12 pr-4 py-3 rounded-lg shadow-sm text-base"
+                  style={{
+                    borderColor: colors.surfaceDark,
+                    color: colors.textPrimary,
+                    backgroundColor: colors.surfaceLight
+                  }}
+                  placeholder="Enter your full name"
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium" style={{ color: colors.textPrimary }}>
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User className="h-5 w-5" style={{ color: colors.textTertiary }} />
+                  <Mail className="h-5 w-5" style={{ color: colors.textTertiary }} />
                 </div>
                 <input
                   id="email"
@@ -130,7 +158,7 @@ export default function SignIn() {
                     color: colors.textPrimary,
                     backgroundColor: colors.surfaceLight
                   }}
-                  placeholder="Enter your password"
+                  placeholder="Create a password"
                   required
                   disabled={loading}
                 />
@@ -147,18 +175,6 @@ export default function SignIn() {
                   )}
                 </button>
               </div>
-            </div>
-
-            {error && (
-              <div className="text-red-500 text-sm p-3 rounded-lg" style={{ backgroundColor: "rgba(254, 202, 202, 0.2)" }}>
-                {error}
-              </div>
-            )}
-
-            <div className="flex justify-end">
-              <Link href="/Authentication/ForgotPassword" className="text-sm font-medium hover:underline" style={{ color: colors.primary }}>
-                Forgot password?
-              </Link>
             </div>
 
             <button
@@ -178,16 +194,16 @@ export default function SignIn() {
               }}
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
-
+          
           <div className="mt-8 text-center">
             <span className="text-base" style={{ color: colors.textSecondary }}>
-              Don&apos;t have an account?{" "}
+              Already have an account?{" "}
             </span>
-            <Link href="/Authentication/SignUp" className="text-base font-medium hover:underline" style={{ color: colors.primary }}>
-              Sign Up
+            <Link href="/" className="text-base font-medium hover:underline" style={{ color: colors.primary }}>
+              Sign In
             </Link>
           </div>
         </div>
