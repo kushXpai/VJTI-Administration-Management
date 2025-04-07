@@ -9,8 +9,8 @@ import { FiHome, FiCoffee, FiAlertCircle, FiUser, FiLogOut, FiMenu, FiX } from '
 import { FaBuilding } from 'react-icons/fa';
 
 // Import modular components
-import ProfileContent from '../Sidebar/Profile/page';
-import HostelContent from '../Sidebar/Hostel/page';
+import ProfileContent from '../Sidebar/Profile/ProfileContent';
+import HostelContent from '../Sidebar/Hostel/HostelContent';
 import GrievancesContent from '../Sidebar/Grievances/page';
 import MessContent from '../Sidebar/Mess/page';
 import DashboardContent from '../Sidebar/Dashboard/Dashboard';
