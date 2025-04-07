@@ -166,9 +166,14 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
             if (insertError) throw insertError;
 
             setSuccess(true);
-        } catch (err: any) {
-            setError(err.message || 'An error occurred while submitting your application.');
-        } finally {
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('An error occurred while submitting your application.');
+            }
+        }
+        finally {
             setIsLoading(false);
         }
     };
