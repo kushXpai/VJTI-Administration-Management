@@ -5,7 +5,6 @@
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client - replace with your actual URL and anon key
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -79,7 +78,27 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
 
     const uploadFile = async (file: File, bucket: string) => {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+
+        // Create specific file name prefix based on bucket type
+        let filePrefix = '';
+        switch (bucket) {
+            case 'student_photos':
+                filePrefix = 'student_photo';
+                break;
+            case 'aadhar_cards':
+                filePrefix = 'aadhar_card';
+                break;
+            case 'acknowledgement_receipts':
+                filePrefix = 'acknowledgement_receipt';
+                break;
+            case 'fee_receipts':
+                filePrefix = 'fee_receipt';
+                break;
+            default:
+                filePrefix = 'document';
+        }
+
+        const fileName = `${filePrefix}_${user.id}_${Date.now()}.${fileExt}`;
 
         const { data, error } = await supabase
             .storage
