@@ -4,8 +4,17 @@
 import { FiCoffee, FiAlertCircle, FiCalendar, FiBook } from 'react-icons/fi';
 import { FaBuilding } from 'react-icons/fa';
 
+interface User {
+    name: string;
+    email: string;
+    id: string;
+    role: string;
+    department: string;
+    year: string;
+}
+
 interface DashboardProps {
-    user: any;
+    user: User;
 }
 
 export default function Dashboard({ user }: DashboardProps) {
@@ -70,7 +79,7 @@ export default function Dashboard({ user }: DashboardProps) {
                                 <h4 className="font-medium text-gray-800">Holiday Notice</h4>
                                 <span className="text-xs text-gray-500">March 25, 2025</span>
                             </div>
-                            <p className="text-sm text-gray-600">The hostel will remain open during the upcoming holidays. Students planning to stay must register at the warden's office.</p>
+                            <p className="text-sm text-gray-600">The hostel will remain open during the upcoming holidays. Students planning to stay must register at the warden&apos;s office.</p>
                         </div>
                         <div className="p-5 hover:bg-gray-50">
                             <div className="flex justify-between mb-1">

@@ -61,16 +61,21 @@ export default function SignIn() {
       } else {
         router.push('/Student/StudentDashboard');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
-    } finally {
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to sign in');
+      }
+    }
+    finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div 
+      <div
         className="w-full max-w-md rounded-xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: colors.surfaceLight,

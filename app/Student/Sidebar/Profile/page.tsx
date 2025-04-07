@@ -2,10 +2,17 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+interface User {
+  name: string;
+  email: string;
+  id: string;
+  role: string;
+  department: string;
+  year: string;
+}
 
 interface ProfileProps {
-  user: any;
+  user: User;
 }
 
 export default function ProfileContent({ user }: ProfileProps) {

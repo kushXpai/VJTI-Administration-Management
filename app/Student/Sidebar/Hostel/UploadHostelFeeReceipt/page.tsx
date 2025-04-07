@@ -8,8 +8,17 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+interface User {
+    name: string;
+    email: string;
+    id: string;
+    role: string;
+    department: string;
+    year: string;
+}
+
 interface UploadHostelFeeReceiptProps {
-    user: any;
+    user: User;
 }
 
 export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptProps) {
@@ -78,7 +87,7 @@ export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptP
             const fileExt = feeReceipt.name.split('.').pop();
             const filePath = `${fileName}.${fileExt}`;
 
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('hostel_fee_receipts')
                 .upload(filePath, feeReceipt);
 
@@ -105,10 +114,15 @@ export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptP
 
             setSuccess(true);
             setHasUploadedReceipt(true);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error uploading receipt:', error);
-            alert(`Upload failed: ${error.message}`);
-        } finally {
+            if (error instanceof Error) {
+                alert(`Upload failed: ${error.message}`);
+            } else {
+                alert('Upload failed: Unknown error');
+            }
+        }
+        finally {
             setIsUploading(false);
         }
     };

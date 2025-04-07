@@ -9,8 +9,17 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+interface User {
+    name: string;
+    email: string;
+    id: string;
+    role: string;
+    department: string;
+    year: string;
+}
+
 interface HostelApplicationProps {
-    user: any;
+    user: User;
 }
 
 export default function HostelApplication({ user }: HostelApplicationProps) {
@@ -100,7 +109,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
 
         const fileName = `${filePrefix}_${user.id}_${Date.now()}.${fileExt}`;
 
-        const { data, error } = await supabase
+        const { error } = await supabase
             .storage
             .from(bucket)
             .upload(fileName, file);
@@ -261,7 +270,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                     <h2 className="text-xl font-semibold mb-4">Parent/Guardian Information</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Father's Name</label>
+                            <label className="block text-sm font-medium text-gray-700">Father&apos;s Name</label>
                             <input
                                 type="text"
                                 name="father_name"
@@ -272,7 +281,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Father's Mobile</label>
+                            <label className="block text-sm font-medium text-gray-700">Father&apos;s Mobile</label>
                             <input
                                 type="tel"
                                 name="father_mobile"
@@ -283,7 +292,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Mother's Name</label>
+                            <label className="block text-sm font-medium text-gray-700">Mother&apos;s Name</label>
                             <input
                                 type="text"
                                 name="mother_name"
@@ -294,7 +303,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Mother's Mobile</label>
+                            <label className="block text-sm font-medium text-gray-700">Mother&apos;s Mobile</label>
                             <input
                                 type="tel"
                                 name="mother_mobile"
@@ -305,7 +314,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Guardian's Name</label>
+                            <label className="block text-sm font-medium text-gray-700">Guardian&apos;s Name</label>
                             <input
                                 type="text"
                                 name="guardian_name"
@@ -316,7 +325,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Guardian's Mobile</label>
+                            <label className="block text-sm font-medium text-gray-700">Guardian&apos;s Mobile</label>
                             <input
                                 type="tel"
                                 name="guardian_mobile"
@@ -520,7 +529,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                                     <option value="BTechComputerEngineering">B.Tech Degree in Computer Engineering</option>
                                     <option value="BTechElectricalEngineering">B.Tech Degree in Electrical Engineering</option>
                                     <option value="BTechElectronicsEngineering">B.Tech Degree in Electronics Engineering</option>
-                                    <option value="BTechElectronicsTelecommunicationEngineering">B.Tech Degree in Electronics & Telecommunication Engineering</option>
+                                    <option value="BTechElectronicsTelecommunicationEngineering">B.Tech Degree in Electronics &amp; Telecommunication Engineering</option>
                                     <option value="BTechInformationTechnology">B.Tech Degree in Information Technology</option>
                                     <option value="BTechMechanicalEngineering">B.Tech Degree in Mechanical Engineering</option>
                                     <option value="BTechProductionEngineering">B.Tech Degree in Production Engineering</option>
@@ -533,7 +542,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                                     <option value="MTechComputerEngineering">M.Tech Degree in Computer Engineering</option>
                                     <option value="MTechElectricalEngineering">M.Tech Degree in Electrical Engineering</option>
                                     <option value="MTechIOT">M.Tech Degree in Internet of Things (IOT)</option>
-                                    <option value="MTechElectronicsTelecommunicationEngineering">M.Tech Degree in Electronics & Telecommunication Engineering</option>
+                                    <option value="MTechElectronicsTelecommunicationEngineering">M.Tech Degree in Electronics &amp; Telecommunication Engineering</option>
                                     <option value="MTechMechanicalEngineering">M.Tech Degree in Mechanical Engineering</option>
                                     <option value="MTechProductionEngineering">M.Tech Degree in Production Engineering</option>
                                     <option value="MTechProjectManagement">M.Tech Degree in Project Management</option>

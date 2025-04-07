@@ -14,7 +14,7 @@ export default function MessContent() {
             <p className="text-sm text-green-600 mt-1">Active (Paid till June 30, 2023)</p>
           </div>
 
-          <h3 className="font-medium mb-4">Today's Menu (April 5, 2025)</h3>
+          <h3 className="font-medium mb-4">Today&apos;s Menu (April 5, 2025)</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-4 bg-gray-50 rounded-lg">

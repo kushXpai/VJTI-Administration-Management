@@ -10,8 +10,17 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+interface User {
+  name: string;
+  email: string;
+  id: string;
+  role: string;
+  department: string;
+  year: string;
+}
+
 interface HostelContentProps {
-  user: any;
+  user: User;
 }
 
 export default function HostelContent({ user }: HostelContentProps) {

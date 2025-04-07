@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { FiHome, FiCoffee, FiAlertCircle, FiUser, FiLogOut, FiSettings, FiCalendar, FiBook, FiMenu, FiX } from 'react-icons/fi';
+import { FiHome, FiCoffee, FiAlertCircle, FiUser, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { FaBuilding } from 'react-icons/fa';
 
 // Import modular components
@@ -32,7 +32,6 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [notifications, setNotifications] = useState(2);
   const router = useRouter();
 
   useEffect(() => {
@@ -66,17 +65,17 @@ export default function StudentDashboard() {
   const renderContent = () => {
     switch (activePage) {
       case 'Dashboard':
-        return <DashboardContent user={user} />;
+        return <DashboardContent user={user!} />;
       case 'Hostel Allocation':
-        return <HostelContent user={user} />;
+        return <HostelContent user={user!} />;
       case 'Grievances':
         return <GrievancesContent />;
       case 'Mess Management':
         return <MessContent />;
       case 'Profile':
-        return <ProfileContent user={user} />;
+        return <ProfileContent user={user!} />;
       default:
-        return <DashboardContent user={user} />;
+        return <DashboardContent user={user!} />;
     }
   };
 

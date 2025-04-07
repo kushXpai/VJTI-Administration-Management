@@ -35,7 +35,7 @@ export default function SignUp() {
     setError('');
 
     try {
-      const { data: existingUser, error: checkError } = await supabase
+      const { data: existingUser } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', email)
@@ -45,14 +45,14 @@ export default function SignUp() {
         throw new Error('Email already in use');
       }
 
-      const { data, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('profiles')
         .insert([
-          { 
-            name, 
-            email, 
+          {
+            name,
+            email,
             password,
-            role: 'student' 
+            role: 'student'
           }
         ])
         .select();
@@ -60,9 +60,13 @@ export default function SignUp() {
       if (insertError) throw insertError;
 
       router.push('/');
-      
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
+
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to sign up');
+      }
     } finally {
       setLoading(false);
     }
@@ -70,7 +74,7 @@ export default function SignUp() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div 
+      <div
         className="w-full max-w-md rounded-xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: colors.surfaceLight,
@@ -85,7 +89,7 @@ export default function SignUp() {
 
         <div className="px-8 py-10">
           {error && <div className="p-3 mb-6 text-sm text-red-700 bg-red-100 rounded-lg">{error}</div>}
-          
+
           <form onSubmit={handleSignUp} className="space-y-8">
             <div className="space-y-2">
               <label htmlFor="name" className="block text-sm font-medium" style={{ color: colors.textPrimary }}>
@@ -197,7 +201,7 @@ export default function SignUp() {
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
-          
+
           <div className="mt-8 text-center">
             <span className="text-base" style={{ color: colors.textSecondary }}>
               Already have an account?{" "}
