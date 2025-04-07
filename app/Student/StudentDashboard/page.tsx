@@ -13,7 +13,7 @@ import ProfileContent from '../Sidebar/Profile/page';
 import HostelContent from '../Sidebar/Hostel/page';
 import GrievancesContent from '../Sidebar/Grievances/page';
 import MessContent from '../Sidebar/Mess/page';
-import DashboardContent from '../Sidebar/Dashboard/page';
+import DashboardContent from '../Sidebar/Dashboard/Dashboard';
 
 // Define the User type
 interface User {
@@ -47,7 +47,7 @@ export default function StudentDashboard() {
         role: "student",
         department: "Computer Engineering",
         year: "Third Year",
-        profileImage: "/images/profile-placeholder.jpg" // Placeholder image path
+        profileImage: "/images/profile-placeholder.jpg"
       });
       setLoading(false);
     }
