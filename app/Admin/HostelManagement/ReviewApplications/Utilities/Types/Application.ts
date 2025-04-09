@@ -10,10 +10,10 @@ export interface Application {
     present_city: string;
     present_state: string;
     aadhar_card_number: string;
-    photo_url?: string;
-    aadhar_card_url?: string;
-    acknowledgement_receipt_url?: string;
-    fee_receipt_url?: string;
+    photo_url: string;
+    aadhar_card_url: string;
+    acknowledgement_receipt_url: string;
+    fee_receipt_url: string;
     course: string;
   }
   

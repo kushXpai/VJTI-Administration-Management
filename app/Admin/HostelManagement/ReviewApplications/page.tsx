@@ -51,7 +51,7 @@ export default function ReviewApplications() {
       setProfiles(profilesData || []);
 
       // Group applications by course
-      const groups: Record<string, any[]> = {};
+      const groups: Record<string, Application[]> = {};
       applicationsData?.forEach(app => {
         if (!app.course) return;
         if (!groups[app.course]) {

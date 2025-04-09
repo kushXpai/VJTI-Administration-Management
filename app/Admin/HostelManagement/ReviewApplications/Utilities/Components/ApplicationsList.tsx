@@ -2,9 +2,10 @@
 
 import React from 'react';
 import ApplicationCard from './ApplicationCard';
+import type { Application } from '../Types/Application';
 
 interface ApplicationsListProps {
-  applications: any[];
+  applications: Application[];
   getStudentName: (id: string) => string;
   updateStatus: (id: string, status: 'Accepted' | 'Pending' | 'Rejected') => Promise<void>;
 }
