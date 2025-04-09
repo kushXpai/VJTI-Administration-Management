@@ -44,11 +44,11 @@ export default function CourseSidebar() {
 
       // Create a map to store course statistics
       const courseStatsMap: { [course: string]: CourseStats } = {};
-      
+
       // Process applications
       applications?.forEach(app => {
         if (!app.course) return;
-        
+
         // Initialize course stats if not exists
         if (!courseStatsMap[app.course]) {
           courseStatsMap[app.course] = {
@@ -58,10 +58,10 @@ export default function CourseSidebar() {
             total: 0
           };
         }
-        
+
         // Increment total count
         courseStatsMap[app.course].total++;
-        
+
         // Increment appropriate status count
         if (app.hostel_application_status === 'Accepted') {
           courseStatsMap[app.course].accepted++;
@@ -90,19 +90,19 @@ export default function CourseSidebar() {
 
       // Create categorized data
       const categories: CategoryData[] = [];
-      
+
       if (Object.keys(diplomaCourses).length > 0) {
         categories.push({ title: 'Diploma', courses: diplomaCourses });
       }
-      
+
       if (Object.keys(graduationCourses).length > 0) {
         categories.push({ title: 'Graduation', courses: graduationCourses });
       }
-      
+
       if (Object.keys(postGraduationCourses).length > 0) {
         categories.push({ title: 'Post Graduation', courses: postGraduationCourses });
       }
-      
+
       setCategorizedData(categories);
     } catch (error) {
       console.error('Error fetching application stats:', error);
@@ -122,28 +122,23 @@ export default function CourseSidebar() {
   return (
     <div className="bg-white p-4 rounded-lg shadow-md w-full">
       <h1 className="text-xl font-bold mb-4 pb-2 border-b-2 border-red-600">Application Statistics</h1>
-      
+
       <div className="mb-4">
-        <div className="flex flex-wrap gap-3 mb-2">
-          <div className="flex items-center">
-            <div className="bg-green-300 w-5 h-5 rounded-sm mr-1"></div>
-            <span className="text-sm">Accepted</span>
-          </div>
-          <div className="flex items-center">
-            <div className="bg-yellow-300 w-5 h-5 rounded-sm mr-1"></div>
-            <span className="text-sm">Pending</span>
-          </div>
-          <div className="flex items-center">
-            <div className="bg-red-400 w-5 h-5 rounded-sm mr-1"></div>
-            <span className="text-sm">Rejected</span>
-          </div>
-          <div className="flex items-center">
-            <div className="bg-black w-5 h-5 rounded-sm mr-1"></div>
-            <span className="text-sm">Total</span>
-          </div>
+        <div className="flex items-center mb-2">
+          <div style={{ backgroundColor: '#86efac' }} className="w-5 h-5 rounded-sm"></div>
+          <span className="text-sm ml-2 mr-4">Accepted</span>
+
+          <div style={{ backgroundColor: '#fde047' }} className="w-5 h-5 rounded-sm"></div>
+          <span className="text-sm ml-2 mr-4">Pending</span>
+
+          <div style={{ backgroundColor: '#f87171' }} className="w-5 h-5 rounded-sm"></div>
+          <span className="text-sm ml-2 mr-4">Rejected</span>
+
+          <div style={{ backgroundColor: '#000000' }} className="w-5 h-5 rounded-sm"></div>
+          <span className="text-sm ml-2">Total</span>
         </div>
       </div>
-      
+
       {totalApplications === 0 ? (
         <div className="text-center py-4">
           <p className="text-gray-600">No applications data available</p>
@@ -156,21 +151,21 @@ export default function CourseSidebar() {
         categorizedData.map((category, index) => (
           <div key={index} className="mb-8">
             <h2 className="text-2xl font-bold mb-3">{category.title}</h2>
-            
+
             {Object.entries(category.courses).map(([courseKey, stats]) => (
               <div key={courseKey} className="mb-4">
                 <p className="text-lg mb-2">{getCourseDisplayName(courseKey)}</p>
-                <div className="flex space-x-2">
-                  <div className="bg-green-300 w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
+                <div className="flex" style={{ gap: '8px' }}>
+                  <div style={{ backgroundColor: '#86efac' }} className="w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
                     {stats.accepted}
                   </div>
-                  <div className="bg-yellow-300 w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
+                  <div style={{ backgroundColor: '#fde047' }} className="w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
                     {stats.pending}
                   </div>
-                  <div className="bg-red-400 w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
+                  <div style={{ backgroundColor: '#f87171' }} className="w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
                     {stats.rejected}
                   </div>
-                  <div className="bg-black text-white w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
+                  <div style={{ backgroundColor: '#000000', color: '#ffffff' }} className="w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
                     {stats.total}
                   </div>
                 </div>

@@ -9,13 +9,21 @@ import CourseSidebar from './Utilities/Components/CourseSidebar';
 import { courseMapping } from './Utilities/Constants/courseData';
 import LoadingSpinner from './Utilities/Components/LoadingSpinner';
 import Image from 'next/image';
+import type { Application } from './Utilities/Types/Application';
+
+interface Profile {
+  id: string;
+  name: string;
+  email: string;
+}
 
 export default function ReviewApplications() {
-  const [applications, setApplications] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
-  const [courseGroups, setCourseGroups] = useState<Record<string, any[]>>({});
+  const [courseGroups, setCourseGroups] = useState<Record<string, Application[]>>({});
 
   useEffect(() => {
     fetchData();
@@ -96,10 +104,10 @@ export default function ReviewApplications() {
   };
 
   // Get student name from profile
-  const getStudentName = (studentId: string) => {
-    const profile = profiles.find(p => p.id === studentId);
-    return profile ? profile.name : 'Unknown Student';
-  };
+  const getStudentName = (studentId: string): string => {
+    const profile = profiles.find((p: Profile) => p.id === studentId);
+    return profile?.name ?? 'Unknown Student';
+  };  
 
   // Handle course selection
   const handleCourseChange = (course: string | null) => {
