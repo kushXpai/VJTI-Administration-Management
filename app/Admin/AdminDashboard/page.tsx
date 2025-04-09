@@ -76,13 +76,13 @@ export default function AdminDashboard() {
       {/* Section Rendering */}
       {sections.map((section, index) => (
         <section className="p-6" key={index}>
-          <h2 className="text-2xl font-semibold mb-4 text-[#800000]">{section.title}</h2>
+          <h2 className="text-3xl font-semibold mb-4 text-[#800000]">{section.title}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {section.items.map((item, idx) => (
               <button
                 key={idx}
                 onClick={() => navigateTo(item.path)}
-                className="bg-red-700 hover:bg-red-800 text-white font-medium rounded p-4 shadow-md transition-all duration-200"
+                className="bg-[#800000] hover:bg-red-800 text-white font-medium rounded p-4 shadow-md transition-all duration-200"
               >
                 {item.name}
               </button>
