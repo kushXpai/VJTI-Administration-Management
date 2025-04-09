@@ -573,6 +573,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                                 <option value="ST">ST</option>
                                 <option value="NT">NT</option>
                                 <option value="SBC">SBC</option>
+                                <option value="SEBC">SEBC</option>
                             </select>
                         </div>
                     </div>
