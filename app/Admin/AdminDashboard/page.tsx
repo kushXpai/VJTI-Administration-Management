@@ -49,6 +49,12 @@ export default function AdminDashboard() {
         { name: 'Feedbacks', path: '/Admin/Mess/Feedbacks' },
       ],
     },
+    {
+      title: 'To be deleted during submission',
+      items: [
+        { name: 'Database', path: '/Admin/Database/ViewDatabases' },
+      ],
+    },
   ];
 
   return (
