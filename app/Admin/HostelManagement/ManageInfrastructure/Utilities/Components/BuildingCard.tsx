@@ -68,8 +68,9 @@ export default function BuildingCard({
           }, []);
   
           setFloorDetails(groupedByFloor);
-        } catch (err: any) {
-          setMessage({ text: 'Failed to fetch floor details.', type: 'error' });
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch floor details.';
+          setMessage({ text: message, type: 'error' });
         } finally {
           setIsLoading(false);
         }
