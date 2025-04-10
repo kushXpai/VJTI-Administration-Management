@@ -1,9 +1,9 @@
 // app/Admin/HostelManagement/GenerateMeritList/page.tsx
 "use client";
 
-'use client';
-
 import { useState } from 'react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export default function MeritListPage() {
   const degrees = [
@@ -59,6 +59,7 @@ export default function MeritListPage() {
 
   return (
     <div className="p-6 space-y-10">
+      <Header onLogout={() => console.log('Logout')} />
       {degrees.map((degree) => (
         <div key={degree.name} className="border p-4 rounded-lg shadow-md">
           <h2 className="text-xl font-bold text-[#800000] mb-4">{degree.name}</h2>
@@ -108,6 +109,7 @@ export default function MeritListPage() {
           </button>
         </div>
       ))}
+      <Footer />
     </div>
   );
 }
