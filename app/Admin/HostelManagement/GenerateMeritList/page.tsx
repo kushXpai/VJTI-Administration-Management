@@ -59,7 +59,14 @@ export default function MeritListPage() {
 
   return (
     <div className="p-6 space-y-10">
-      <Header onLogout={() => console.log('Logout')} />
+      <Header
+        rightContent={
+          <div className="flex flex-col">
+          <h1 className="text-xl font-bold tracking-tight text-[#800000]">Hostel Merit List</h1>
+          <p className="text-sm text-gray-600">Admin Management Panel</p>
+          </div>
+        }
+        />
       {degrees.map((degree) => (
         <div key={degree.name} className="border p-4 rounded-lg shadow-md">
           <h2 className="text-xl font-bold text-[#800000] mb-4">{degree.name}</h2>
