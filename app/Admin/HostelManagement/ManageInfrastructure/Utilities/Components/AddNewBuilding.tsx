@@ -150,7 +150,7 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
           
           <div>
             <label htmlFor="buildingPrefix" className="block text-sm font-medium text-gray-700 mb-1">
-              Building Prefix (e.g., 'A')
+              Building Prefix (e.g., A)
             </label>
             <input
               type="text"

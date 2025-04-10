@@ -45,9 +45,40 @@ export default function BuildingCard({
   // Fetch floor details when building is expanded
   useEffect(() => {
     if (isExpanded) {
+      const fetchFloorDetails = async () => {
+        setIsLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('rooms')
+            .select('*')
+            .eq('building_name', building.name)
+            .order('floor', { ascending: true })
+            .order('room_number', { ascending: true });
+  
+          if (error) throw error;
+  
+          const groupedByFloor = data.reduce((acc: FloorDetails[], room) => {
+            const existing = acc.find(f => f.floor === room.floor);
+            if (existing) {
+              existing.rooms.push(room);
+            } else {
+              acc.push({ floor: room.floor, rooms: [room] });
+            }
+            return acc;
+          }, []);
+  
+          setFloorDetails(groupedByFloor);
+        } catch (err: any) {
+          setMessage({ text: 'Failed to fetch floor details.', type: 'error' });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+  
       fetchFloorDetails();
     }
-  }, [isExpanded, building.name]);
+  }, [isExpanded, building.name, supabase, setMessage]);
+  
 
   const fetchFloorDetails = async () => {
     setIsLoading(true);
