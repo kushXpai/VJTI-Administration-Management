@@ -24,6 +24,7 @@ export default function AdminDashboard() {
         { name: 'Generate Merit List', path: '/Admin/HostelManagement/GenerateMeritList' },
         { name: 'Room Allotment', path: '/Admin/HostelManagement/RoomAllotment' },
         { name: 'Review Allotment', path: '/Admin/HostelManagement/ReviewAllotment' },
+        { name: 'Manage Infrastructure', path: '/Admin/HostelManagement/ManageInfrastructure' },
         { name: 'Vacancy', path: '/Admin/HostelManagement/Vacancy' },
         { name: 'Seat Matrix', path: '/Admin/HostelManagement/SeatMatrix' },
         { name: 'Hostel ID Card', path: '/Admin/HostelManagement/HostelID' },
