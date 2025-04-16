@@ -43,7 +43,7 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
   const [currentDate, setCurrentDate] = useState<string>('');
 
   useEffect(() => {
-    // Set current date in format: Wednesday, April 16, 2025
+    console.log(currentDate);
     const now = new Date();
     setCurrentDate(now.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -51,11 +51,11 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
       month: 'long',
       day: 'numeric'
     }));
-
+  
     if (user?.id) {
       fetchGrievances();
     }
-  }, [user?.id]);
+  }, [user?.id, fetchGrievances]);
 
   async function fetchGrievances() {
     if (!user?.id) {
