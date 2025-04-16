@@ -34,7 +34,7 @@ export default function ViewDatabases() {
   const fetchTables = useCallback(async () => {
     setError(null);
     try {
-      const tableNames = ['hostel_applications', 'profiles']; // Add more known table names as needed
+      const tableNames = ['hostel_applications', 'profiles', 'rooms']; // Add more known table names as needed
       setTables(tableNames);
 
       if (tableNames.length > 0) {

@@ -2,84 +2,103 @@
 
 'use client';
 
-export default function GrievancesContent() {
-  return (
-    <div className="p-6 w-full">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-6">Grievances</h2>
+import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import GrievancesContent, { User } from './GrievancesContent';
+import { useRouter } from 'next/navigation';
 
-        <div className="space-y-6">
-          <div className="flex justify-end mb-4">
-            <button className="px-4 py-2 bg-[#800000] text-white rounded hover:bg-[#660000]">
-              New Complaint
-            </button>
-          </div>
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Complaint ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Issue
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">GRV-2023-001</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Hostel</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">Water leakage in bathroom</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">March 15, 2023</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Resolved
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">GRV-2023-002</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Mess</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">Food quality concerns</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">April 2, 2023</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                      In Progress
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+export default function GrievancesPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Get user from localStorage
+  useEffect(() => {
+    const getUserFromLocalStorage = () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (!userData) {
+          throw new Error('No user found in local storage');
+        }
+        
+        const parsedUser = JSON.parse(userData);
+        if (!parsedUser || !parsedUser.id) {
+          throw new Error('Invalid user data');
+        }
+        
+        // Ensure all required fields are present
+        const completeUser: User = {
+          id: parsedUser.id,
+          name: parsedUser.name,
+          email: parsedUser.email,
+          role: parsedUser.role,
+          department: parsedUser.department || '',
+          year: parsedUser.year || ''
+        };
+        
+        setUser(completeUser);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        console.error('Error getting user from localStorage:', errorMessage);
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getUserFromLocalStorage();
+  }, []);
+
+  // Update Supabase RLS policy to be more permissive for development
+  useEffect(() => {
+    const updateGrievancePolicy = async () => {
+      try {
+        // This is just a client-side check to log if there might be an issue
+        // Real policy changes must be done on the server or directly in Supabase
+        const { data, error } = await supabase
+          .from('grievances')
+          .select('count()')
+          .limit(1);
+          
+        if (error) {
+          console.warn('You might need to update RLS policies:', error.message);
+          console.log('Consider making policies more permissive for development');
+        }
+      } catch (error) {
+        console.error('Error checking policies:', error);
+      }
+    };
+    
+    if (user?.id) {
+      updateGrievancePolicy();
+    }
+  }, [user?.id]);
+
+  if (loading) {
+    return <div className="p-4 text-center">Loading...</div>;
+  }
+
+  if (error || !user) {
+    return (
+      <div className="p-4 text-center">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error || 'User not found. Please log in again.'}
         </div>
+        <button 
+          className="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded"
+          onClick={() => router.push('/')}
+          type="button"
+        >
+          Return to Login
+        </button>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <GrievancesContent user={user} />;
 }
