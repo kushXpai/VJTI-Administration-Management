@@ -16,7 +16,7 @@ export const generatePDF = async (title: string, applications: Application[]): P
   let currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
   let currentY = pageHeight - margin;
 
-  // Draw title
+  // Draw title and date
   const titleFontSize = 16;
   const wrappedTitle = wrapText(title, timesRomanBoldFont, titleFontSize, usableWidth);
   wrappedTitle.forEach((line, index) => {
@@ -50,6 +50,9 @@ export const generatePDF = async (title: string, applications: Application[]): P
 
   // Process each specialization
   for (const [specialization, apps] of Object.entries(specializationGroups)) {
+    // Sort all applications by CET rank
+    apps.sort((a, b) => a.cet_rank - b.cet_rank);
+
     // Add new page if needed
     if (currentY < margin + 100) {
       currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
@@ -77,6 +80,7 @@ export const generatePDF = async (title: string, applications: Application[]): P
       Math.floor(usableWidth * 0.1)   // EWS
     ];
 
+    // Draw column headers
     let xPos = margin;
     columns.forEach((col, index) => {
       currentPage.drawText(col, {
@@ -91,14 +95,13 @@ export const generatePDF = async (title: string, applications: Application[]): P
 
     // Draw rows
     let rank = 1;
-    const rowHeight = 25;
     for (const app of apps) {
       // Add new page if needed
-      if (currentY < margin + rowHeight) {
+      if (currentY < margin + 25) {
         currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
         currentY = pageHeight - margin;
-
-        // Redraw headers on new page
+        
+        // Redraw specialization and column headers on new page
         currentPage.drawText(`${specialization} (continued)`, {
           x: margin,
           y: currentY,
@@ -123,7 +126,7 @@ export const generatePDF = async (title: string, applications: Application[]): P
 
       // Draw row data
       xPos = margin;
-      
+
       // Rank
       currentPage.drawText(rank.toString(), {
         x: xPos + 5,
@@ -178,12 +181,11 @@ export const generatePDF = async (title: string, applications: Application[]): P
         font: timesRomanFont
       });
 
-      currentY -= rowHeight;
+      currentY -= 25;
       rank++;
     }
 
-    // Add spacing between specializations
-    currentY -= 20;
+    currentY -= 30; // Add spacing between specializations
   }
 
   return await pdfDoc.save();

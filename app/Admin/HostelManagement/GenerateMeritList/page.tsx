@@ -1,7 +1,7 @@
 // app/Admin/HostelManagement/GenerateMeritList/page.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Header from '@/app/Components/Header';
 import Footer from '@/app/Components/Footer';
@@ -16,6 +16,21 @@ export default function MeritListPage() {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [pdfUrls, setPdfUrls] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+
+  // Load saved PDF URLs when component mounts
+  useEffect(() => {
+    const savedUrls = localStorage.getItem('meritListPdfUrls');
+    if (savedUrls) {
+      setPdfUrls(JSON.parse(savedUrls));
+    }
+  }, []);
+
+  // Save PDF URLs to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(pdfUrls).length > 0) {
+      localStorage.setItem('meritListPdfUrls', JSON.stringify(pdfUrls));
+    }
+  }, [pdfUrls]);
 
   const handleInputChange = (degree: string, specialization: string, gender: 'boys' | 'girls', value: number) => {
     if (value >= 0) {
@@ -55,10 +70,7 @@ export default function MeritListPage() {
       VJNTDT: 1, // Combined limit for VJ, NT, and DT
     };
 
-    // Sort applications by CET rank
-    applications.sort((a, b) => a.cet_rank - b.cet_rank);
-
-    // Group applications by category
+    // Create separate lists for each category, sorted by CET rank
     const categoryGroups: Record<string, Application[]> = {
       General: [],
       OBC: [],
@@ -67,9 +79,9 @@ export default function MeritListPage() {
       VJNTDT: [],
     };
 
-    // Group applications into categories
+    // Group applications by category
     for (const app of applications) {
-      // First, fetch the student's name from profiles table
+      // Fetch student name using the application's id which maps to profiles.id
       const { data: profileData } = await supabase
         .from('profiles')
         .select('name')
@@ -88,34 +100,37 @@ export default function MeritListPage() {
       }
     }
 
-    // Allocate students from each category
-    const allocated: Application[] = [];
-    Object.entries(categoryLimits).forEach(([category, limit]) => {
-      const categoryApps = categoryGroups[category];
-      // Sort again within each category by CET rank
-      categoryApps.sort((a, b) => a.cet_rank - b.cet_rank);
-      allocated.push(...categoryApps.slice(0, limit));
+    // Sort each category group by CET rank
+    Object.values(categoryGroups).forEach(group => {
+      group.sort((a, b) => a.cet_rank - b.cet_rank);
     });
 
-    // Handle EWS allocation (1 seat)
-    const ewsCandidates = applications.filter(app =>
+    // Allocate seats category-wise
+    const allocated: Application[] = [];
+    
+    // First allocate non-EWS seats by category
+    Object.entries(categoryLimits).forEach(([category, limit]) => {
+      const categoryApps = categoryGroups[category];
+      const nonEwsApps = categoryApps.filter(app => !app.is_ews);
+      allocated.push(...nonEwsApps.slice(0, limit));
+    });
+
+    // Then handle EWS allocation (1 seat)
+    const ewsCandidates = applications.filter(app => 
       app.is_ews && !allocated.includes(app)
     );
+    ewsCandidates.sort((a, b) => a.cet_rank - b.cet_rank);
 
-    if (ewsCandidates.length > 0) {
-      // Sort EWS candidates by CET rank
-      ewsCandidates.sort((a, b) => a.cet_rank - b.cet_rank);
-      // First try from General category
-      const ewsFromGeneral = ewsCandidates.filter(app => app.category === 'General');
-      if (ewsFromGeneral.length > 0) {
-        allocated.push(ewsFromGeneral[0]);
-      } else {
-        // If no General category EWS candidates, take from any category
-        allocated.push(ewsCandidates[0]);
-      }
+    // First try EWS from General category
+    const ewsFromGeneral = ewsCandidates.filter(app => app.category === 'General');
+    if (ewsFromGeneral.length > 0) {
+      allocated.push(ewsFromGeneral[0]);
+    } else if (ewsCandidates.length > 0) {
+      // If no General category EWS candidates, take from any category
+      allocated.push(ewsCandidates[0]);
     }
 
-    // Final sort of allocated students by CET rank
+    // Final sort of all allocated students by CET rank for display
     allocated.sort((a, b) => a.cet_rank - b.cet_rank);
 
     // Ensure we don't exceed the maximum count
