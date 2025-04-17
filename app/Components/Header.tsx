@@ -2,20 +2,22 @@ import Image from 'next/image';
 import { ReactNode } from 'react';
 
 interface HeaderProps {
-  rightContent?: ReactNode; // Custom content for the right-hand side
+  rightContent?: ReactNode;
 }
 
 export default function Header({ rightContent }: HeaderProps) {
   return (
-    <header className="flex justify-between items-center p-4 border-b border-gray-300 bg-white shadow">
-      <div className="flex items-center gap-4">
-        <Image src="/images/vjti_logo.svg" alt="VJTI Logo" width={50} height={50} />
+    <header className="flex flex-col sm:flex-row justify-between items-center p-2 sm:p-4 border-b border-gray-300 bg-white shadow">
+      <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto mb-2 sm:mb-0">
+        <div className="relative w-10 h-10 sm:w-[50px] sm:h-[50px]">
+          <Image src="/images/vjti_logo.svg" alt="VJTI Logo" fill className="object-contain" />
+        </div>
         <div>
-          <h1 className="text-xl font-bold text-[#800000]">Veermata Jijabai Technological Institute</h1>
-          <p className="text-sm text-gray-600">Matunga East, Mumbai, Maharashtra 400019</p>
+          <h1 className="text-base sm:text-xl font-bold text-[#800000] line-clamp-1">Veermata Jijabai Technological Institute</h1>
+          <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">Matunga East, Mumbai, Maharashtra 400019</p>
         </div>
       </div>
-      <div>{rightContent}</div> {/* Render custom content here */}
+      <div className="w-full sm:w-auto">{rightContent}</div>
     </header>
   );
 }
