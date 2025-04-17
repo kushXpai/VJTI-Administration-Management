@@ -6,6 +6,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Header from '@/app/Components/Header';
 import Footer from '@/app/Components/Footer';
 import DegreeForm from './components/DegreeForm';
+import { ErrorAlert } from './components/ErrorAlert';
 import { Application, CountsType } from './types/hostelTypes';
 import { generatePDF } from './utils/pdfUtils';
 import { degreesData, mapToDbCourse } from './utils/courseUtils';
@@ -16,6 +17,8 @@ export default function MeritListPage() {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [pdfUrls, setPdfUrls] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load saved PDF URLs when component mounts
   useEffect(() => {
@@ -33,18 +36,38 @@ export default function MeritListPage() {
   }, [pdfUrls]);
 
   const handleInputChange = (degree: string, specialization: string, gender: 'boys' | 'girls', value: number) => {
-    if (value >= 0) {
-      setCounts((prev) => ({
+    // Clear any existing validation errors for this field
+    setValidationErrors(prev => ({
+      ...prev,
+      [`${degree}_${specialization}_${gender}`]: ''
+    }));
+
+    if (value < 0) {
+      setValidationErrors(prev => ({
         ...prev,
-        [degree]: {
-          ...prev[degree],
-          [specialization]: {
-            ...prev[degree]?.[specialization],
-            [gender]: value,
-          },
-        },
+        [`${degree}_${specialization}_${gender}`]: 'Count cannot be negative'
       }));
+      return;
     }
+
+    if (value > 100) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [`${degree}_${specialization}_${gender}`]: 'Count exceeds maximum limit'
+      }));
+      return;
+    }
+
+    setCounts((prev) => ({
+      ...prev,
+      [degree]: {
+        ...prev[degree],
+        [specialization]: {
+          ...prev[degree]?.[specialization],
+          [gender]: value,
+        },
+      },
+    }));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -121,12 +144,17 @@ export default function MeritListPage() {
     );
     ewsCandidates.sort((a, b) => a.cet_rank - b.cet_rank);
 
-    // First try EWS from General category
+    // EWS allocation strategy:
+    // 1. First try General category EWS candidates
+    // 2. If no General EWS, then select best EWS candidate from any category who isn't already allocated
     const ewsFromGeneral = ewsCandidates.filter(app => app.category === 'General');
     if (ewsFromGeneral.length > 0) {
+      // Take the General category EWS candidate with best rank
       allocated.push(ewsFromGeneral[0]);
     } else if (ewsCandidates.length > 0) {
-      // If no General category EWS candidates, take from any category
+      // If no General category EWS candidates available, 
+      // take the best ranked EWS candidate from any category
+      // who hasn't already been allocated in their category quota
       allocated.push(ewsCandidates[0]);
     }
 
@@ -139,10 +167,48 @@ export default function MeritListPage() {
 
   const handleGenerate = async (degree: string) => {
     try {
+      setIsSubmitting(true);
       setLoading({ ...loading, [degree]: true });
       setError(null);
 
+      // Validate inputs before proceeding
       const specializations = degreesData.find(d => d.name === degree)?.specializations || [];
+      let hasValidationErrors = false;
+      let hasAtLeastOneNonZeroCount = false;
+
+      specializations.forEach((specialization) => {
+        const boysCount = counts[degree]?.[specialization]?.boys || 0;
+        const girlsCount = counts[degree]?.[specialization]?.girls || 0;
+
+        if (boysCount < 0 || boysCount > 100) {
+          setValidationErrors(prev => ({
+            ...prev,
+            [`${degree}_${specialization}_boys`]: 'Count must be between 0 and 100'
+          }));
+          hasValidationErrors = true;
+        }
+
+        if (girlsCount < 0 || girlsCount > 100) {
+          setValidationErrors(prev => ({
+            ...prev,
+            [`${degree}_${specialization}_girls`]: 'Count must be between 0 and 100'
+          }));
+          hasValidationErrors = true;
+        }
+
+        if (boysCount > 0 || girlsCount > 0) {
+          hasAtLeastOneNonZeroCount = true;
+        }
+      });
+
+      if (hasValidationErrors) {
+        throw new Error('Please fix validation errors before generating merit list');
+      }
+
+      if (!hasAtLeastOneNonZeroCount) {
+        throw new Error('Please enter at least one non-zero count to generate merit list');
+      }
+
       const boysApplications: Application[] = [];
       const girlsApplications: Application[] = [];
 
@@ -243,11 +309,12 @@ export default function MeritListPage() {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading({ ...loading, [degree]: false });
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="p-6 space-y-10">
+    <div className={`p-6 space-y-10 ${isSubmitting ? 'opacity-70 pointer-events-none' : ''}`}>
       <Header
         rightContent={
           <div className="flex flex-col">
@@ -256,11 +323,12 @@ export default function MeritListPage() {
           </div>
         }
       />
-
+      
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
+        <ErrorAlert 
+          message={error}
+          onDismiss={() => setError(null)}
+        />
       )}
 
       {degreesData.map((degree) => (
@@ -270,6 +338,7 @@ export default function MeritListPage() {
           counts={counts}
           pdfUrls={pdfUrls}
           loading={loading}
+          validationErrors={validationErrors}
           handleInputChange={handleInputChange}
           handleKeyDown={handleKeyDown}
           handleGenerate={handleGenerate}

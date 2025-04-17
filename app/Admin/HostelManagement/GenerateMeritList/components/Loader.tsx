@@ -4,13 +4,14 @@ import React from 'react';
 
 interface LoaderProps {
   text?: string;
+  className?: string;
 }
 
-const Loader: React.FC<LoaderProps> = ({ text = 'Processing...' }) => {
+const Loader: React.FC<LoaderProps> = ({ text = 'Processing...', className }) => {
   return (
     <>
       <svg 
-        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
+        className={`animate-spin ${className || '-ml-1 mr-3 h-5 w-5'} text-current`}
         xmlns="http://www.w3.org/2000/svg" 
         fill="none" 
         viewBox="0 0 24 24"
