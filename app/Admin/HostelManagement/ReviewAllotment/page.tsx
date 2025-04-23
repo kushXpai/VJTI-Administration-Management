@@ -111,7 +111,7 @@ export default function ReviewAllotment() {
           course,
           apps.filter(app => app.hostel_fees_status === selectedStatus)
         ])
-        .filter(([_, filteredApps]) => filteredApps.length > 0);
+        .filter(([, filteredApps]) => filteredApps.length > 0);
     }
 
     return entries;

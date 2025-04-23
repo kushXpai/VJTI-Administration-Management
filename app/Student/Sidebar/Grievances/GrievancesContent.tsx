@@ -43,7 +43,7 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
   const [currentDate, setCurrentDate] = useState<string>('');
 
   useEffect(() => {
-    console.log(currentDate);
+    //console.log(currentDate);
     const now = new Date();
     setCurrentDate(now.toLocaleDateString('en-US', {
       weekday: 'long',
