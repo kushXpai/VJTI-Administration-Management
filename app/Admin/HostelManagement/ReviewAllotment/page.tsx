@@ -18,7 +18,6 @@ interface Profile {
 }
 
 export default function ReviewAllotment() {
-  const [applications, setApplications] = useState<Application[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
@@ -45,7 +44,6 @@ export default function ReviewAllotment() {
 
       if (profilesError) throw profilesError;
 
-      setApplications(applicationsData || []);
       setProfiles(profilesData || []);
 
       const groups: Record<string, Application[]> = {};
@@ -73,12 +71,6 @@ export default function ReviewAllotment() {
         .eq('id', id);
 
       if (error) throw error;
-
-      setApplications(prev =>
-        prev.map(app =>
-          app.id === id ? { ...app, hostel_fees_status: status } : app
-        )
-      );
 
       setCourseGroups(prev => {
         const newGroups = { ...prev };
