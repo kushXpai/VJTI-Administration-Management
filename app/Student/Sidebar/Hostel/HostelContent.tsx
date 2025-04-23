@@ -89,6 +89,7 @@ export default function HostelContent({ user }: HostelContentProps) {
             <span className="block sm:inline"> Your hostel application has been submitted successfully.</span>
           </div>
         </div>
+
         
         {isAllotmentAccepted && (
           <div className="bg-white rounded-lg shadow-md p-6">
