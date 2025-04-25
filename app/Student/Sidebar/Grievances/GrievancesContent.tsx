@@ -44,6 +44,8 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
 
   // Define fetchGrievances as a useCallback to prevent recreation on each render
   const fetchGrievances = useCallback(async () => {
+    console.log("Current date is:", currentDate); // Example use
+
     if (!user?.id) {
       setIsLoading(false);
       return;
