@@ -14,7 +14,7 @@ export interface Application {
     aadhar_card_url: string;
     acknowledgement_receipt_url: string;
     fee_receipt_url: string;
-    hostel_fee_receipts_url:string;
+    hostel_fee_receipt_url:string;
     course: string;
     hostel_allotment_status: 'Accepted' | 'Pending' | 'Rejected';
     hostel_fees_status:'Pending' | 'Paid';

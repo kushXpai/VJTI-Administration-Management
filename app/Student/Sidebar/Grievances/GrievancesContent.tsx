@@ -83,8 +83,8 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, currentDate]); // Only depend on user.id
-
+  }, [user?.id, currentDate]);
+  
   useEffect(() => {
     const now = new Date();
     setCurrentDate(now.toLocaleDateString('en-US', {
