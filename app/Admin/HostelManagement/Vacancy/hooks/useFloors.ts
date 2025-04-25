@@ -24,6 +24,7 @@ export const useFloors = (selectedBlock: number | null, buildings: Building[]) =
 
         if (floorError) throw floorError;
 
+        // Removed the type assertion to resolve ESLint error
         const uniqueFloorNumbers = Array.from(
           new Set(floorData?.map((item) => item.floor) || [])
         );
@@ -59,20 +60,20 @@ export const useFloors = (selectedBlock: number | null, buildings: Building[]) =
                 if (profileError) throw profileError;
                 profileData = profiles;
 
-                // ✅ CHANGED HERE: using 'id' instead of 'user_id'
+                // Changed here: using 'id' instead of 'user_id'
                 const { data: applications, error: applicationError } = await supabase
                   .from('hostel_applications')
-                  .select('id, course') // ✅ Changed from 'user_id' to 'id'
-                  .in('id', studentIds); // ✅ Changed from 'user_id' to 'id'
+                  .select('id, course') // Changed from 'user_id' to 'id'
+                  .in('id', studentIds); // Changed from 'user_id' to 'id'
 
                 if (applicationError) throw applicationError;
                 applicationData = applications;
               }
 
-              // ✅ CHANGED HERE: comparing with 'id' instead of 'user_id'
+              // Changed here: comparing with 'id' instead of 'user_id'
               const students = profileData.map((profile) => {
                 const application = applicationData.find(
-                  (app) => app.id === profile.id // ✅ Changed from app.user_id
+                  (app) => app.id === profile.id // Changed from app.user_id
                 );
                 return {
                   id: profile.id,
