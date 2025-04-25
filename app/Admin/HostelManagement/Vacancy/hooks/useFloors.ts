@@ -90,10 +90,10 @@ export const useFloors = (selectedBlock: number | null, buildings: Building[]) =
                 students,
                 status:
                   room.occupants === room.capacity
-                    ? ('full' as 'full')
+                    ? 'full' as const
                     : room.occupants === 0
-                    ? ('empty' as 'empty')
-                    : ('partial' as 'partial'),
+                    ? 'empty' as const
+                    : 'partial' as const,
               };
             })
           );
