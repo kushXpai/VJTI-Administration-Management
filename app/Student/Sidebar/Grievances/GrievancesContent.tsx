@@ -83,7 +83,7 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]); // Only depend on user.id
+  }, [user?.id, currentDate]); // Only depend on user.id
 
   useEffect(() => {
     const now = new Date();
