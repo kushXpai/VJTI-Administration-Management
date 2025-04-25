@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import GrievancesContent, { User } from './GrievancesContent';
 import { useRouter } from 'next/navigation';
@@ -17,44 +17,45 @@ export default function GrievancesPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Get user from localStorage
-  useEffect(() => {
-    const getUserFromLocalStorage = () => {
-      try {
-        const userData = localStorage.getItem('user');
-        if (!userData) {
-          throw new Error('No user found in local storage');
-        }
-        
-        const parsedUser = JSON.parse(userData);
-        if (!parsedUser || !parsedUser.id) {
-          throw new Error('Invalid user data');
-        }
-        
-        // Ensure all required fields are present
-        const completeUser: User = {
-          id: parsedUser.id,
-          name: parsedUser.name,
-          email: parsedUser.email,
-          role: parsedUser.role,
-          department: parsedUser.department || '',
-          year: parsedUser.year || ''
-        };
-        
-        setUser(completeUser);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-        console.error('Error getting user from localStorage:', errorMessage);
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
+  // Get user from localStorage - wrapped in useCallback to optimize performance
+  const getUserFromLocalStorage = useCallback(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        throw new Error('No user found in local storage');
       }
-    };
-    
-    getUserFromLocalStorage();
+      
+      const parsedUser = JSON.parse(userData);
+      if (!parsedUser || !parsedUser.id) {
+        throw new Error('Invalid user data');
+      }
+      
+      // Ensure all required fields are present
+      const completeUser: User = {
+        id: parsedUser.id,
+        name: parsedUser.name,
+        email: parsedUser.email,
+        role: parsedUser.role,
+        department: parsedUser.department || '',
+        year: parsedUser.year || ''
+      };
+      
+      setUser(completeUser);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      console.error('Error getting user from localStorage:', errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+  
+  // Effect to get user on component mount - run only once
+  useEffect(() => {
+    getUserFromLocalStorage();
+  }, [getUserFromLocalStorage]);
 
-  // Update Supabase RLS policy to be more permissive for development
+  // Optional: Check RLS policies only after user is loaded and only once
   useEffect(() => {
     const updateGrievancePolicy = async () => {
       try {
@@ -77,7 +78,7 @@ export default function GrievancesPage() {
     if (user?.id) {
       updateGrievancePolicy();
     }
-  }, [user?.id]);
+  }, [user?.id]); // Only run when user ID changes
 
   if (loading) {
     return <div className="p-4 text-center">Loading...</div>;

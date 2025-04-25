@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import GrievanceForm from './Components/GrievanceForm';
 import GrievancesList from './Components/GrievancesList';
@@ -42,22 +42,8 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
   const [activeTab, setActiveTab] = useState<'list' | 'new'>('list');
   const [currentDate, setCurrentDate] = useState<string>('');
 
-  useEffect(() => {
-    //console.log(currentDate);
-    const now = new Date();
-    setCurrentDate(now.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }));
-  
-    if (user?.id) {
-      fetchGrievances();
-    }
-  }, [user?.id, fetchGrievances]);
-
-  async function fetchGrievances() {
+  // Define fetchGrievances as a useCallback to prevent recreation on each render
+  const fetchGrievances = useCallback(async () => {
     if (!user?.id) {
       setIsLoading(false);
       return;
@@ -95,7 +81,22 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [user?.id]); // Only depend on user.id
+
+  useEffect(() => {
+    const now = new Date();
+    setCurrentDate(now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }));
+  
+    // Only fetch grievances if user.id is available
+    if (user?.id) {
+      fetchGrievances();
+    }
+  }, [user?.id, fetchGrievances]); // Now this is safe since fetchGrievances is memoized
 
   const handleGrievanceSubmitted = () => {
     fetchGrievances();
