@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabase/supabaseClient";
 
@@ -9,6 +10,9 @@ export default function HostelComplaintsAdmin() {
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [rejectRemark, setRejectRemark] = useState("");
+  const [selectedStatusForUpdate, setSelectedStatusForUpdate] = useState<string>("");
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState("");
 
   const fetchGrievances = async () => {
     const { data } = await supabase
@@ -16,6 +20,7 @@ export default function HostelComplaintsAdmin() {
       .select("*")
       .eq("category", "Hostel")
       .order("created_at", { ascending: false });
+
     setGrievances(data || []);
   };
 
@@ -28,21 +33,22 @@ export default function HostelComplaintsAdmin() {
     };
 
     if (newStatus === "Rejected" && remark) {
-      updates.remark = remark; // Save remark separately
+      updates.remark = remark;
     } else if (newStatus !== "Rejected") {
-      updates.remark = null; // Clear remark if status changed again
+      updates.remark = null;
     }
 
-    await supabase
-      .from("grievances")
-      .update(updates)
-      .eq("id", id);
+    await supabase.from("grievances").update(updates).eq("id", id);
 
     await fetchGrievances();
     setSelectedComplaint(null);
     setShowRejectBox(false);
     setRejectRemark("");
     setLoading(false);
+  };
+
+  const markAsOpened = async (id: string) => {
+    await supabase.from("grievances").update({ is_opened: true }).eq("id", id);
   };
 
   useEffect(() => {
@@ -59,20 +65,99 @@ export default function HostelComplaintsAdmin() {
     textSecondary: '#333333',
     textTertiary: '#777777',
     textInverse: '#FFFFFF',
+    lightBlue: '#81D4FA',
+    lightGreen: '#A5D6A7',
+    lightRed: '#EF9A9A',
+    lightYellow: '#FFF59D',
   };
 
   const filteredGrievances = selectedStatus === "All"
     ? grievances
-    : grievances.filter(g => g.status === selectedStatus);
+    : grievances.filter((g) => g.status === selectedStatus);
+
+  const handleStatusChange = (status: string) => {
+    if (status === "Rejected") {
+      setDialogMessage("Are you sure you want to reject this complaint?");
+      setShowConfirmationDialog(true);
+      setSelectedStatusForUpdate("Rejected");
+    } else {
+      setDialogMessage(`Are you sure you want to change status to ${status}?`);
+      setShowConfirmationDialog(true);
+      setSelectedStatusForUpdate(status);
+    }
+  };
+
+  const handleConfirmDialog = async (action: "Yes" | "No") => {
+    if (action === "Yes") {
+      setShowConfirmationDialog(false);
+      if (selectedStatusForUpdate === "Rejected") {
+        setShowRejectBox(true);
+      } else {
+        await updateStatus(selectedComplaint.id, selectedStatusForUpdate);
+        alert(`Complaint status changed to "${selectedStatusForUpdate}".`);
+      }
+    } else {
+      setShowConfirmationDialog(false);
+    }
+  };
+
+  const handleRejectedStatus = () => {
+    setDialogMessage("Are you sure you want to reject this complaint?");
+    setShowConfirmationDialog(true);
+    setSelectedStatusForUpdate("Rejected");
+  };
+
+  const handleSubmitRejection = async () => {
+    if (!rejectRemark) {
+      alert("Please provide a rejection reason.");
+      return;
+    }
+    await updateStatus(selectedComplaint.id, "Rejected", rejectRemark);
+    alert("Complaint rejected successfully.");
+  };
+
+  const renderStatusButtons = () => {
+    let statusOptions: string[] = [];
+
+    if (selectedComplaint.status === "Pending") {
+      statusOptions = ["In Progress", "Resolved", "Rejected"];
+    } else if (selectedComplaint.status === "In Progress") {
+      statusOptions = ["Pending", "Resolved", "Rejected"];
+    } else if (selectedComplaint.status === "Resolved") {
+      statusOptions = ["Pending", "In Progress", "Rejected"];
+    } else if (selectedComplaint.status === "Rejected") {
+      statusOptions = ["Pending", "In Progress", "Resolved"];
+    }
+
+    return statusOptions.map((status) => (
+      <button
+        key={status}
+        onClick={() => {
+          if (status === "Rejected") {
+            handleRejectedStatus();
+          } else {
+            handleStatusChange(status);
+          }
+        }}
+        className={`px-4 py-2 ${
+          status === "In Progress" ? "bg-blue-400" :
+          status === "Resolved" ? "bg-green-600" :
+          status === "Pending" ? "bg-yellow-400" :
+          "bg-red-600"
+        } text-white rounded hover:bg-opacity-80 transition-all transform hover:scale-105`}
+      >
+        {status}
+      </button>
+    ));
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center py-10 px-4 bg-gray-100">
       <div className="w-full max-w-5xl bg-white rounded-xl shadow-2xl p-8">
         <h1 className="text-3xl font-bold text-center mb-6" style={{ color: colors.primary }}>
-          Manage Hostel Grievances
+          Manage General Grievances
         </h1>
 
-        {/* Dropdown Filter */}
         <div className="flex justify-end mb-6">
           <select
             className="border p-2 rounded-lg"
@@ -87,7 +172,6 @@ export default function HostelComplaintsAdmin() {
           </select>
         </div>
 
-        {/* Complaints List */}
         {filteredGrievances.length === 0 ? (
           <p className="text-center text-gray-600">No complaints available.</p>
         ) : (
@@ -95,8 +179,13 @@ export default function HostelComplaintsAdmin() {
             {filteredGrievances.map((g) => (
               <div
                 key={g.id}
-                onClick={() => setSelectedComplaint(g)}
-                className="p-4 border rounded-lg bg-gray-50 shadow-md cursor-pointer hover:shadow-lg transition-all"
+                onClick={() => {
+                  if (!g.is_opened) {
+                    markAsOpened(g.id);
+                  }
+                  setSelectedComplaint(g);
+                }}
+                className={`p-4 border rounded-lg bg-gray-50 shadow-md cursor-pointer hover:shadow-lg transition-all ${!g.is_opened ? 'border-yellow-500' : ''}`}
               >
                 <div className="flex justify-between items-center">
                   <p className="font-semibold text-lg" style={{ color: colors.textPrimary }}>
@@ -106,26 +195,37 @@ export default function HostelComplaintsAdmin() {
                     className="px-3 py-1 rounded-full text-sm"
                     style={{
                       backgroundColor:
-                        g.status === "Resolved" ? "#A5D6A7" :
-                        g.status === "Pending" ? "#FFE082" :
-                        g.status === "In Progress" ? "#81D4FA" :
-                        "#EF9A9A",
+                        g.status === "Resolved" ? colors.lightGreen :
+                        g.status === "Pending" ? colors.lightYellow :
+                        g.status === "In Progress" ? colors.lightBlue :
+                        colors.lightRed,
                       color: colors.textPrimary,
                     }}
                   >
                     {g.status}
                   </span>
                 </div>
+                {!g.is_opened && (
+                  <span className="inline-block bg-red-500 text-white text-xs font-semibold py-1 px-2 rounded-full mt-2">
+                    New
+                  </span>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Modal for Complaint Details */}
       {selectedComplaint && (
         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-2xl w-full shadow-2xl relative">
+          <div className="bg-white p-6 rounded-lg max-w-2xl w-full shadow-2xl relative border-1">
+            <button
+              onClick={() => setSelectedComplaint(null)}
+              className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white text-2xl font-bold flex items-center justify-center rounded-md transform transition-all hover:bg-red-600 hover:scale-105 active:scale-95"
+            >
+              X
+            </button>
+
             <h2 className="text-2xl font-bold mb-4" style={{ color: colors.primary }}>
               Complaint Details
             </h2>
@@ -138,7 +238,7 @@ export default function HostelComplaintsAdmin() {
               <img
                 src={selectedComplaint.image_url}
                 alt="proof"
-                className="mt-4 rounded-lg max-h-80 object-cover"
+                className="mt-4 rounded-lg max-h-80 object-cover shadow-md"
               />
             )}
 
@@ -152,86 +252,67 @@ export default function HostelComplaintsAdmin() {
               Status: <span className="font-bold">{selectedComplaint.status}</span>
             </p>
 
-            {/* If rejected, show remark */}
-            {selectedComplaint.status === "Rejected" && selectedComplaint.remark && (
-              <div className="mt-4">
-                <p className="text-sm" style={{ color: colors.textSecondary }}>
-                  <span className="font-semibold">Rejection Reason:</span> {selectedComplaint.remark}
-                </p>
-              </div>
-            )}
-
-            {/* Admin Actions */}
-            <div className="flex flex-wrap gap-4 mt-6">
-              <button
-                onClick={() => updateStatus(selectedComplaint.id, "Resolved")}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-all"
-                disabled={loading}
-              >
-                Mark as Resolved
-              </button>
-              <button
-                onClick={() => updateStatus(selectedComplaint.id, "Pending")}
-                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-all"
-                disabled={loading}
-              >
-                Mark as Pending
-              </button>
-              <button
-                onClick={() => updateStatus(selectedComplaint.id, "In Progress")}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all"
-                disabled={loading}
-              >
-                Mark as In Progress
-              </button>
-              <button
-                onClick={() => setShowRejectBox(true)}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-all"
-                disabled={loading}
-              >
-                Mark as Rejected
-              </button>
-              <button
-                onClick={() => setSelectedComplaint(null)}
-                className="ml-auto px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-all"
-              >
-                Close
-              </button>
-            </div>
-
-            {/* Reject Remark Box */}
-            {showRejectBox && (
+            
               <div className="mt-6">
-                <textarea
-                  className="w-full border p-2 rounded-lg"
-                  rows={3}
-                  placeholder="Enter rejection reason..."
-                  value={rejectRemark}
-                  onChange={(e) => setRejectRemark(e.target.value)}
-                ></textarea>
-
-                <div className="flex justify-end mt-4 space-x-4">
-                  <button
-                    onClick={() => {
-                      if (rejectRemark.trim() === "") {
-                        alert("Please enter a valid reason to reject.");
-                        return;
-                      }
-                      updateStatus(selectedComplaint.id, "Rejected", rejectRemark);
-                    }}
-                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all"
-                  >
-                    Confirm Reject
-                  </button>
-                  <button
-                    onClick={() => setShowRejectBox(false)}
-                    className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-all"
-                  >
-                    Cancel
-                  </button>
+                <h3 className="text-lg font-bold">Update Complaint Status</h3>
+                <div className="flex gap-4 mt-4">
+                  {renderStatusButtons()}
                 </div>
               </div>
-            )}
+            
+          </div>
+        </div>
+      )}
+
+      {showConfirmationDialog && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl">
+            <h3 className="text-lg font-bold mb-4">{dialogMessage}</h3>
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleConfirmDialog("Yes")}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-all"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => handleConfirmDialog("No")}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all"
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRejectBox && (
+        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-bold mb-4" style={{ color: colors.primary }}>
+              Enter Rejection Reason
+            </h3>
+            <textarea
+              className="w-full border p-2 rounded-lg"
+              rows={4}
+              placeholder="Enter reason..."
+              value={rejectRemark}
+              onChange={(e) => setRejectRemark(e.target.value)}
+            ></textarea>
+            <div className="flex gap-4 mt-4">
+              <button
+                onClick={handleSubmitRejection}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-all"
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => setShowRejectBox(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

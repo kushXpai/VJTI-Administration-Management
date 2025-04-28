@@ -252,14 +252,14 @@ export default function HostelComplaintsAdmin() {
               Status: <span className="font-bold">{selectedComplaint.status}</span>
             </p>
 
-            {selectedComplaint.status !== "Resolved" && (
+            
               <div className="mt-6">
                 <h3 className="text-lg font-bold">Update Complaint Status</h3>
                 <div className="flex gap-4 mt-4">
                   {renderStatusButtons()}
                 </div>
               </div>
-            )}
+            
           </div>
         </div>
       )}
