@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabase/supabaseClient";
+import Image from 'next/image';
 
 // Define a type for the grievance object
 interface Grievance {
@@ -80,7 +81,7 @@ export default function GeneralComplaints() {
       }
 
       // Ensure we're using the correct table name and proper database connection
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("grievances")
         .update(updates)
         .eq("id", id);
@@ -455,11 +456,7 @@ export default function GeneralComplaints() {
             {selectedComplaint.image_url && (
               <div className="mb-6">
                 <p className="font-medium mb-2">Attached Image:</p>
-                <img
-                  src={selectedComplaint.image_url}
-                  alt="proof"
-                  className="rounded-lg max-h-80 w-full object-contain border shadow-md bg-gray-50 p-2"
-                />
+                <Image src={selectedComplaint.image_url} alt="description" width={500} height={300} />
               </div>
             )}
 
