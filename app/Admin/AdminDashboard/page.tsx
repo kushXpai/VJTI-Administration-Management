@@ -33,12 +33,12 @@ export default function AdminDashboard() {
     {
       title: 'Grievances',
       items: [
-        { name: 'Hostel Complaints', path: '/Admin/Grievances/HostelComplaints' },
-        { name: 'Mess Complaints', path: '/Admin/Grievances/MessComplaints' },
-        { name: 'General Complaints', path: '/Admin/Grievances/GeneralComplaints' },
-        { name: 'Track Complaint Status', path: '/Admin/Grievances/TrackComplaintStatus' },
-        { name: 'Room Change Requests', path: '/Admin/Grievances/RoomChangeRequests' },
-        { name: 'Feedbacks', path: '/Admin/Grievances/Feedbacks' },
+        { name: 'Hostel Complaints', path: '/Admin/GrievancesManagement/HostelComplaints' },
+        { name: 'Mess Complaints', path: '/Admin/GrievancesManagement/MessComplaints' },
+        { name: 'General Complaints', path: '/Admin/GrievancesManagement/GeneralComplaints' },
+        { name: 'Track Complaint Status', path: '/Admin/GrievancesManagement/TrackComplaintStatus' },
+        { name: 'Room Change Requests', path: '/Admin/GrievancesManagement/RoomChangeRequests' },
+        { name: 'Feedbacks', path: '/Admin/GrievancesManagement/Feedbacks' },
       ],
     },
     {
