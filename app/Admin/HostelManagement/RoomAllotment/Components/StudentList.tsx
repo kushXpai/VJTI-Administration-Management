@@ -6,7 +6,7 @@ import { supabase } from '@/supabase/supabaseClient';
 import { HostelApplication, Degree, HostelBlock, Room } from '../Types/Type';
 import ManualAllocationModal from './ManualAllocationModal';
 import { formatCourseDisplay } from '../utils/courseUtils';
-import { useNotification } from '../Contexts/NotificationContext'; // Import useNotification
+import { useNotification } from '../Contexts/NotificationContext'; 
 
 interface StudentListProps {
   course: Degree;
@@ -75,7 +75,6 @@ export default function StudentList({
 
       const room = suitableRooms[0];
 
-      // Update room: append student_id as string to occupants_list
       const updatedOccupantsList = [...room.occupants_list, String(app.id)];
       const { error: roomError } = await supabase
         .from('rooms')

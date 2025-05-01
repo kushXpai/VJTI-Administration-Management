@@ -116,7 +116,7 @@ export default function ManualAllocationModal({
       return;
     }
 
-    const updatedOccupantsList = [...room.occupants_list, String(application.student_id)];
+    const updatedOccupantsList = [...room.occupants_list, String(application.id)];
     const { error: roomError } = await supabase
       .from('rooms')
       .update({

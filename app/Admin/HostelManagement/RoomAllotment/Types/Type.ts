@@ -7,7 +7,6 @@ export type ApplicationStatus = 'Pending' | 'Accepted' | 'Rejected'; // Ensure t
 
 export interface HostelApplication {
   id: string;
-  student_id: string;
   name: string;
   course: Course;
   gender: Gender;

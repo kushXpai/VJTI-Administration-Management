@@ -8,7 +8,7 @@ import StudentList from './Components/StudentList';
 import AllocatedStudents from './Components/AllocatedStudents';
 import HostelAvailability from './Components/HostelAvailability';
 import Notification from './Components/Notification';
-import { NotificationProvider } from './Contexts/NotificationContext'; // Import NotificationProvider
+import { NotificationProvider } from './Contexts/NotificationContext';
 import { supabase } from '@/supabase/supabaseClient';
 import { HostelApplication, Room, Degree, ApplicationStatus, Gender } from './Types/Type';
 
@@ -91,9 +91,11 @@ export default function RoomAllotmentPage() {
         }
 
         setRooms(roomData || []);
-      } catch (err: any) {
+      } catch (err: unknown) { // Changed from 'any' to 'unknown'
+        // Ensure err is treated as an Error object
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load data.';
         console.error('Error in fetchData:', err);
-        setError(err.message || 'Failed to load data.');
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -153,7 +155,7 @@ export default function RoomAllotmentPage() {
 
         <HostelAvailability rooms={rooms} />
 
-        <Notification /> {/* Add Notification component to render toasts */}
+        <Notification />
 
         <Footer />
       </div>
