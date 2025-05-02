@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { FiCoffee, FiAlertCircle, FiCalendar, FiBook } from 'react-icons/fi';
 import { FaBuilding } from 'react-icons/fa';
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/supabase/supabaseClient';
 
 
