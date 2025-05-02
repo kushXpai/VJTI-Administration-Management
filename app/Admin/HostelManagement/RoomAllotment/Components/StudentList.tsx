@@ -1,15 +1,15 @@
 // app/Admin/HostelManagement/RoomAllotment/Components/StudentList.tsx
 "use client";
 
-import { useState } from 'react';
-import { supabase } from '@/supabase/supabaseClient';
-import { HostelApplication, Degree, HostelBlock, Room } from '../Types/Type';
+import { useState, useMemo } from 'react';
 import ManualAllocationModal from './ManualAllocationModal';
-import { formatCourseDisplay } from '../utils/courseUtils';
-import { useNotification } from '../Contexts/NotificationContext'; 
+import { HostelApplication, Room, Degree } from '../Types/Type';
+import { useNotification } from '../Contexts/NotificationContext';
+import { supabase } from '@/supabase/supabaseClient';
+import { formatCourseDisplay, mapFromDbCourse } from '../utils/courseUtils';
 
 interface StudentListProps {
-  course: Degree;
+  course: Degree; // Matches degree name (e.g., 'Bachelor of Technology (B.Tech)')
   applications: HostelApplication[];
   setApplications: React.Dispatch<React.SetStateAction<HostelApplication[]>>;
   setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
@@ -24,58 +24,45 @@ export default function StudentList({
   rooms,
 }: StudentListProps) {
   const [selectedApplication, setSelectedApplication] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { showNotification } = useNotification(); 
+  const { showNotification } = useNotification();
 
-  // Map gender to room type
-  const genderToRoomType = (gender: string): string => {
-    return gender === 'Male' ? 'Boys' : 'Girls';
+  const filteredApplications = applications.filter((app) => {
+    const { degree } = mapFromDbCourse(app.course);
+    return degree === course;
+  });
+
+  const pendingApplications = filteredApplications.filter(
+    (app) => app.hostel_allotment_status === 'Pending'
+  );
+
+  const selectedApp = useMemo(
+    () => applications.find((app) => app.id === selectedApplication) || null,
+    [applications, selectedApplication]
+  );
+
+  const handleAllocate = (applicationId: string) => {
+    setSelectedApplication(applicationId);
   };
 
-  // Define allowed buildings for each room type
-  const allowedBuildings: Record<string, HostelBlock[]> = {
-    Boys: ['PG Block', 'C Block', 'D Block'],
-    Girls: ['B Block'],
-  };
+  const handleAutoAllocate = async () => {
+    const boysRooms: Room[] = rooms.filter((room) => room.type === 'Boys' && room.vacant > 0);
+    const girlsRooms: Room[] = rooms.filter((room) => room.type === 'Girls' && room.vacant > 0);
 
-  const allocateRoomsByCourse = async () => {
-    const appsToAllocate = applications.filter(
-      (app) => app.course.startsWith(course) && app.hostel_allotment_status !== 'Accepted'
-    );
-
-    console.log(`Applications for ${course}:`, applications.filter((app) => app.course.startsWith(course)));
-    console.log(`Apps to allocate for ${course}:`, appsToAllocate);
-
-    if (appsToAllocate.length === 0) {
-      showNotification(`No students available to allocate for ${course}.`, 'error');
-      return;
-    }
-
-    let updatedApplications = [...applications];
     let updatedRooms = [...rooms];
+    let updatedApplications = [...applications];
 
-    for (const app of appsToAllocate) {
-      const roomType = genderToRoomType(app.gender);
-      const suitableBuildings = allowedBuildings[roomType];
+    for (const app of pendingApplications) {
+      const roomType = app.gender === 'Male' ? 'Boys' : 'Girls';
+      const availableRooms = roomType === 'Boys' ? boysRooms : girlsRooms;
 
-      // Find available rooms matching type and building
-      const suitableRooms = updatedRooms
-        .filter(
-          (room) =>
-            room.type === roomType &&
-            suitableBuildings.includes(room.building_name) &&
-            room.vacant > 0
-        )
-        .sort((a, b) => a.vacant - b.vacant);
-
-      if (suitableRooms.length === 0) {
-        showNotification(`No available rooms for ${app.name}.`, 'error');
+      if (availableRooms.length === 0) {
+        showNotification(`No available ${roomType} rooms for ${app.name}.`, 'error');
         continue;
       }
 
-      const room = suitableRooms[0];
-
+      const room = availableRooms[0];
       const updatedOccupantsList = [...room.occupants_list, String(app.id)];
+
       const { error: roomError } = await supabase
         .from('rooms')
         .update({
@@ -86,11 +73,10 @@ export default function StudentList({
         .eq('id', room.id);
 
       if (roomError) {
-        showNotification(`Error allocating room for ${app.name}: ${roomError.message}`, 'error');
+        showNotification(`Error updating room for ${app.name}: ${roomError.message}`, 'error');
         continue;
       }
 
-      // Update application
       const { error: appError } = await supabase
         .from('hostel_applications')
         .update({
@@ -105,7 +91,6 @@ export default function StudentList({
         continue;
       }
 
-      // Update local state
       updatedApplications = updatedApplications.map((a) =>
         a.id === app.id
           ? {
@@ -128,103 +113,82 @@ export default function StudentList({
           : r
       );
 
-      // showNotification(
-      //   `Allocated ${app.name} to ${room.building_name}, Room ${room.room_number}`,
-      //   'success'
-      // );
+      if (roomType === 'Boys') {
+        boysRooms[0].vacant -= 1;
+        boysRooms[0].occupants += 1;
+        boysRooms[0].occupants_list = updatedOccupantsList;
+        if (boysRooms[0].vacant === 0) boysRooms.shift();
+      } else {
+        girlsRooms[0].vacant -= 1;
+        girlsRooms[0].occupants += 1;
+        girlsRooms[0].occupants_list = updatedOccupantsList;
+        if (girlsRooms[0].vacant === 0) girlsRooms.shift();
+      }
+
+      showNotification(
+        `Allocated ${app.name} to ${room.building_name}, Room ${room.room_number}`,
+        'success'
+      );
     }
 
     setApplications(updatedApplications);
     setRooms(updatedRooms);
   };
 
-  const selectedApp = applications.find((app) => app.id === selectedApplication);
-
-  const courseApplications = applications.filter((app) => app.course.startsWith(course));
-
-  const dropdownOptions = applications.filter(
-    (app) => app.course.startsWith(course) && app.hostel_allotment_status !== 'Accepted'
-  );
-  console.log(`Dropdown options for ${course}:`, dropdownOptions);
-
   return (
-    <div className="border p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-[#800000] mb-4">
-        List of {course} Students
-      </h2>
-      {courseApplications.length === 0 ? (
-        <p className="text-gray-600">
-          No students available for {course}. Only students who have paid hostel fees are shown.
-        </p>
-      ) : (
-        <>
-          <div className="border rounded-md mb-4 max-h-64 overflow-y-auto">
-            <table className="w-full table-auto">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="p-2 text-left">Name</th>
-                  <th className="p-2 text-left">Course</th>
-                  <th className="p-2 text-left">Gender</th>
-                  <th className="p-2 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {courseApplications.map((app) => (
-                  <tr key={app.id} className="border-t">
-                    <td className="p-2">{app.name}</td>
-                    <td className="p-2">{formatCourseDisplay(app.course)}</td>
-                    <td className="p-2">{app.gender}</td>
-                    <td className="p-2">
-                      {app.hostel_allotment_status === 'Accepted' &&
-                      app.hostel_block &&
-                      app.room_number ? (
-                        <span className="text-green-600 text-sm">Allocated</span>
-                      ) : (
-                        <span className="text-red-600 text-sm">Not Allocated</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Pending Applications</h2>
+        {pendingApplications.length > 0 && (
+          <button
+            className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
+            onClick={handleAutoAllocate}
+          >
+            Auto Allocate
+          </button>
+        )}
+      </div>
 
-          <div className="flex space-x-4">
-            <button
-              className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
-              onClick={allocateRoomsByCourse}
-            >
-              Auto Allocate
-            </button>
-            <div className="flex space-x-2">
-              <select
-                value={selectedApplication || ''}
-                onChange={(e) => setSelectedApplication(e.target.value)}
-                className="border px-2 py-1 rounded"
-              >
-                <option value="">Select Student</option>
-                {dropdownOptions.map((app) => (
-                  <option key={app.id} value={app.id}>
-                    {app.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="border border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100"
-                onClick={() => setIsModalOpen(true)}
-                disabled={!selectedApplication}
-              >
-                Allocate Manually
-              </button>
-            </div>
-          </div>
-        </>
+      {pendingApplications.length === 0 ? (
+        <p className="text-gray-600">No pending applications for {course} students.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="py-2 px-4 border-b text-left text-gray-600">Name</th>
+                <th className="py-2 px-4 border-b text-left text-gray-600">Gender</th>
+                <th className="py-2 px-4 border-b text-left text-gray-600">Course</th>
+                <th className="py-2 px-4 border-b text-left text-gray-600">Status</th>
+                <th className="py-2 px-4 border-b text-left text-gray-600">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingApplications.map((app) => (
+                <tr key={app.id} className="hover:bg-gray-50">
+                  <td className="py-2 px-4 border-b text-gray-800">{app.name}</td>
+                  <td className="py-2 px-4 border-b text-gray-800">{app.gender}</td>
+                  <td className="py-2 px-4 border-b text-gray-800">{formatCourseDisplay(app.course)}</td>
+                  <td className="py-2 px-4 border-b text-gray-800">{app.hostel_allotment_status}</td>
+                  <td className="py-2 px-4 border-b">
+                    <button
+                      className="bg-red-700 text-white px-3 py-1 rounded hover:bg-red-800"
+                      onClick={() => handleAllocate(app.id)}
+                    >
+                      Allocate Manually
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <ManualAllocationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        application={selectedApp || null}
+        isOpen={!!selectedApplication}
+        onClose={() => setSelectedApplication(null)}
+        application={selectedApp}
         rooms={rooms}
         setApplications={setApplications}
         setRooms={setRooms}

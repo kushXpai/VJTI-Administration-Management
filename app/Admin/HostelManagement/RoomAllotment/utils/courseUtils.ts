@@ -71,7 +71,7 @@ export const degreesData = [
   
   // Format course for display: Return only the specialization (or course name for MCA/Diploma)
   export const formatCourseDisplay = (dbCourse: string): string => {
-    const { degree, specialization } = mapFromDbCourse(dbCourse);
+    const { specialization } = mapFromDbCourse(dbCourse);
     // For MCA and Diploma, return the course name as-is
     if (dbCourse === 'MCA' || dbCourse === 'Diploma') {
       return dbCourse;

@@ -28,6 +28,7 @@ export default function ManualAllocationModal({
   const [selectedRoom, setSelectedRoom] = useState<number | ''>('');
   const [availableFloors, setAvailableFloors] = useState<number[]>([]);
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [isAllocating, setIsAllocating] = useState(false);
   const { showNotification } = useNotification();
 
   const genderToRoomType = (gender: string): string => {
@@ -39,6 +40,23 @@ export default function ManualAllocationModal({
     Girls: ['B Block'],
   };
 
+  const areRoomsEqual = (rooms1: Room[], rooms2: Room[]): boolean => {
+    if (rooms1.length !== rooms2.length) return false;
+    return rooms1.every((room1, index) => {
+      const room2 = rooms2[index];
+      return (
+        room1.id === room2.id &&
+        room1.building_name === room2.building_name &&
+        room1.room_number === room2.room_number &&
+        room1.floor === room2.floor &&
+        room1.type === room2.type &&
+        room1.vacant === room2.vacant &&
+        room1.occupants === room2.occupants &&
+        JSON.stringify(room1.occupants_list) === JSON.stringify(room2.occupants_list)
+      );
+    });
+  };
+
   useEffect(() => {
     if (!isOpen) {
       setSelectedBuilding('');
@@ -46,54 +64,65 @@ export default function ManualAllocationModal({
       setSelectedRoom('');
       setAvailableFloors([]);
       setAvailableRooms([]);
+      setIsAllocating(false);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    if (selectedBuilding && application) {
-      const roomType = genderToRoomType(application.gender);
-      const floors = Array.from(
-        new Set(
-          rooms
-            .filter(
-              (room) =>
-                room.building_name === selectedBuilding &&
-                room.type === roomType &&
-                allowedBuildings[roomType].includes(room.building_name)
-            )
-            .map((room) => room.floor)
-        )
-      ).sort((a, b) => a - b);
-      setAvailableFloors(floors);
-      setSelectedFloor(floors.length > 0 ? floors[0] : '');
-      setSelectedRoom('');
-    } else {
-      setAvailableFloors([]);
-      setSelectedFloor('');
-      setSelectedRoom('');
+    if (!isOpen || !selectedBuilding || !application || isAllocating) {
+      return;
     }
-  }, [selectedBuilding, rooms, application]);
+
+    const roomType = genderToRoomType(application.gender);
+    const floors = Array.from(
+      new Set(
+        rooms
+          .filter(
+            (room) =>
+              room.building_name === selectedBuilding &&
+              room.type === roomType &&
+              allowedBuildings[roomType].includes(room.building_name)
+          )
+          .map((room) => room.floor)
+      )
+    ).sort((a, b) => a - b);
+
+    if (JSON.stringify(floors) !== JSON.stringify(availableFloors)) {
+      setAvailableFloors(floors);
+    }
+
+    const newSelectedFloor = floors.length > 0 ? floors[0] : '';
+    if (newSelectedFloor !== selectedFloor) {
+      setSelectedFloor(newSelectedFloor);
+    }
+  }, [isOpen, selectedBuilding, rooms, application, allowedBuildings, isAllocating]);
 
   useEffect(() => {
-    if (selectedBuilding && selectedFloor !== '' && application) {
-      const roomType = genderToRoomType(application.gender);
-      const filteredRooms = rooms
-        .filter(
-          (room) =>
-            room.building_name === selectedBuilding &&
-            room.floor === selectedFloor &&
-            room.type === roomType &&
-            room.vacant > 0 &&
-            allowedBuildings[roomType].includes(room.building_name)
-        )
-        .sort((a, b) => a.room_number.localeCompare(b.room_number));
-      setAvailableRooms(filteredRooms);
-      setSelectedRoom(filteredRooms.length > 0 ? filteredRooms[0].id : '');
-    } else {
-      setAvailableRooms([]);
-      setSelectedRoom('');
+    if (!isOpen || !selectedBuilding || selectedFloor === '' || !application || isAllocating) {
+      return;
     }
-  }, [selectedBuilding, selectedFloor, rooms, application]);
+
+    const roomType = genderToRoomType(application.gender);
+    const filteredRooms = rooms
+      .filter(
+        (room) =>
+          room.building_name === selectedBuilding &&
+          room.floor === selectedFloor &&
+          room.type === roomType &&
+          room.vacant > 0 &&
+          allowedBuildings[roomType].includes(room.building_name)
+      )
+      .sort((a, b) => a.room_number.localeCompare(b.room_number));
+
+    if (!areRoomsEqual(filteredRooms, availableRooms)) {
+      setAvailableRooms(filteredRooms);
+    }
+
+    const newSelectedRoom = filteredRooms.length > 0 ? filteredRooms[0].id : '';
+    if (newSelectedRoom !== selectedRoom) {
+      setSelectedRoom(newSelectedRoom);
+    }
+  }, [isOpen, selectedBuilding, selectedFloor, rooms, application, allowedBuildings, isAllocating]);
 
   const handleAllocate = async () => {
     if (!application || !selectedBuilding || selectedFloor === '' || selectedRoom === '') {
@@ -101,17 +130,21 @@ export default function ManualAllocationModal({
       return;
     }
 
+    setIsAllocating(true);
+
     const roomType = genderToRoomType(application.gender);
     const room = rooms.find((r) => r.id === selectedRoom);
 
     if (!room) {
       showNotification('Selected room not found.', 'error');
+      setIsAllocating(false);
       onClose();
       return;
     }
 
     if (room.type !== roomType || !allowedBuildings[roomType].includes(room.building_name)) {
       showNotification('Gender mismatch: Cannot allocate to this room.', 'error');
+      setIsAllocating(false);
       onClose();
       return;
     }
@@ -128,6 +161,7 @@ export default function ManualAllocationModal({
 
     if (roomError) {
       showNotification(`Error updating room: ${roomError.message}`, 'error');
+      setIsAllocating(false);
       onClose();
       return;
     }
@@ -143,6 +177,7 @@ export default function ManualAllocationModal({
 
     if (appError) {
       showNotification(`Error updating application: ${appError.message}`, 'error');
+      setIsAllocating(false);
       onClose();
       return;
     }
@@ -177,6 +212,7 @@ export default function ManualAllocationModal({
       `Allocated ${application.name} to ${selectedBuilding}, Room ${room.room_number}`,
       'success'
     );
+    setIsAllocating(false);
     onClose();
   };
 
@@ -184,13 +220,11 @@ export default function ManualAllocationModal({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      {/* Transparent Overlay */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       ></div>
 
-      {/* Card-style Modal */}
       <div className="relative bg-white p-6 rounded-lg shadow-lg w-full max-w-md z-50">
         <h2 className="text-xl font-bold text-[#800000] mb-4">
           Allocate Room for {application.name}
@@ -256,8 +290,9 @@ export default function ManualAllocationModal({
           <button
             className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
             onClick={handleAllocate}
+            disabled={isAllocating}
           >
-            Allocate
+            {isAllocating ? 'Allocating...' : 'Allocate'}
           </button>
         </div>
       </div>

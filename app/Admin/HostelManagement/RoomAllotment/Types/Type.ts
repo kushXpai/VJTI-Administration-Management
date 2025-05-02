@@ -1,14 +1,18 @@
 // app/Admin/HostelManagement/RoomAllotment/Types/Type.ts
 export type HostelBlock = 'PG Block' | 'C Block' | 'D Block' | 'B Block';
-export type Degree = 'BTech' | 'MTech' | 'MCA' | 'Diploma';
+export type Degree =
+  | 'Bachelor of Technology (B.Tech)'
+  | 'Master of Technology (M.Tech)'
+  | 'Master of Computer Application (MCA)'
+  | 'Diploma';
 export type Course = string;
 export type Gender = 'Male' | 'Female';
-export type ApplicationStatus = 'Pending' | 'Accepted' | 'Rejected'; // Ensure these match database values
+export type ApplicationStatus = 'Pending' | 'Accepted' | 'Rejected';
 
 export interface HostelApplication {
   id: string;
   name: string;
-  course: Course;
+  course: Course; // e.g., 'BTechComputerEngineering', 'MTechMechanicalEngineering', 'MCA', 'Diploma'
   gender: Gender;
   hostel_allotment_status: ApplicationStatus;
   hostel_block?: string | null;
