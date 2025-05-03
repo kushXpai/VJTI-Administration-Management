@@ -1,3 +1,5 @@
+// app/Student/Sidebar/Dashboard/Dashboard.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -140,9 +142,9 @@ export default function Dashboard({ user }: DashboardProps) {
                 <span className="text-xs text-gray-500">March 25, 2025</span>
               </div>
               <p className="text-sm text-gray-600">
-                The hostel will remain open during the upcoming holidays. Students planning to stay must register at the
-                warden's office.
-              </p>
+  The hostel will remain open during the upcoming holidays. Students planning to stay must register at the warden&rsquo;s office.
+</p>
+
             </div>
             <div className="p-5 hover:bg-gray-50">
               <div className="flex justify-between mb-1">
