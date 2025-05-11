@@ -48,6 +48,7 @@ export default function AdminDashboard() {
         { name: 'Manage Payments', path: '/Admin/Mess/ManagePayments' },
         { name: 'Track Inventory', path: '/Admin/Mess/TrackInventory' },
         { name: 'Feedbacks', path: '/Admin/Mess/Feedbacks' },
+        // { name: 'Mess Attendence', path: '/Admin/MessManagement/MessAttendance' },
       ],
     },
     {
