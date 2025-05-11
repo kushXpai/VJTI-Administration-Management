@@ -44,7 +44,7 @@ export default function AdminDashboard() {
     {
       title: 'Mess Management',
       items: [
-        { name: 'Update Mess Menu', path: '/Admin/Mess/UpdateMenu' },
+        { name: 'Update Mess Menu', path: '/Admin/MessManagement/UpdateMenu' },
         { name: 'Manage Payments', path: '/Admin/Mess/ManagePayments' },
         { name: 'Track Inventory', path: '/Admin/Mess/TrackInventory' },
         { name: 'Feedbacks', path: '/Admin/Mess/Feedbacks' },
