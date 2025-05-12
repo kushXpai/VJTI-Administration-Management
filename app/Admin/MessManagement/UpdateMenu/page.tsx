@@ -86,7 +86,6 @@ export default function UpdateMessMenu() {
 
       if (!data?.length) {
         // No data for the current week, create a new blank week
-        // Omit onConflict; rely on table's unique constraint
         await supabase.from('mess_menu_weekly').upsert(emptyWeek);
         setWeekMenus(emptyWeek);
         toast.success('New week created with blank menus');
@@ -127,7 +126,6 @@ export default function UpdateMessMenu() {
 
   const handleSaveAll = async () => {
     try {
-      // Omit onConflict; rely on table's unique constraint
       const { error } = await supabase
         .from('mess_menu_weekly')
         .upsert(weekMenus);
@@ -135,41 +133,6 @@ export default function UpdateMessMenu() {
       toast.success('All menus saved successfully');
     } catch (err) {
       toast.error(`Error saving all menus: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  };
-
-  const handleCopyLastWeek = async () => {
-    try {
-      const currentWeekNumber = getCurrentWeekNumber();
-      const lastWeekNumber = currentWeekNumber - 1;
-
-      const { data, error } = await supabase
-        .from('mess_menu_weekly')
-        .select('*')
-        .eq('week_number', lastWeekNumber);
-
-      if (error) throw error;
-      if (!data?.length) {
-        toast.error('No menu data found for last week');
-        return;
-      }
-
-      const newMenus = weekMenus.map(menu => {
-        const matchingDay = data.find(d => d.day_of_week === menu.day_of_week);
-        return {
-          ...menu,
-          breakfast: matchingDay?.breakfast || 'Menu not yet updated',
-          lunch: matchingDay?.lunch || 'Menu not yet updated',
-          dinner: matchingDay?.dinner || 'Menu not yet updated',
-        };
-      });
-
-      // Omit onConflict; rely on table's unique constraint
-      await supabase.from('mess_menu_weekly').upsert(newMenus);
-      setWeekMenus(newMenus);
-      toast.success('Copied last week’s menus successfully');
-    } catch (err) {
-      toast.error(`Error copying last week: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -183,13 +146,6 @@ export default function UpdateMessMenu() {
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-[#800000]">Admin - Weekly Mess Menu</h2>
         <div className="space-x-4">
-          <button
-            onClick={handleCopyLastWeek}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg disabled:opacity-50"
-            disabled={loading || dbConnectionStatus !== 'connected'}
-          >
-            Copy Last Week
-          </button>
           <button
             onClick={handleSaveAll}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg disabled:opacity-50"
