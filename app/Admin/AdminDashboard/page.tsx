@@ -27,7 +27,7 @@ export default function AdminDashboard() {
         { name: 'Manage Infrastructure', path: '/Admin/HostelManagement/ManageInfrastructure' },
         { name: 'Vacancy', path: '/Admin/HostelManagement/Vacancy' },
         { name: 'Seat Matrix', path: '/Admin/HostelManagement/SeatMatrix' },
-        { name: 'Hostel ID Card', path: '/Admin/HostelManagement/HostelID' },
+        { name: 'Hostel ID Card', path: '/Admin/HostelManagement/HostelIDCard' },
       ],
     },
     {
@@ -45,9 +45,9 @@ export default function AdminDashboard() {
       title: 'Mess Management',
       items: [
         { name: 'Update Mess Menu', path: '/Admin/MessManagement/UpdateMenu' },
-        { name: 'Manage Payments', path: '/Admin/Mess/ManagePayments' },
-        { name: 'Track Inventory', path: '/Admin/Mess/TrackInventory' },
-        { name: 'Feedbacks', path: '/Admin/Mess/Feedbacks' },
+        { name: 'Manage Payments', path: '/Admin/MessManagement/ManagePayments' },
+        { name: 'Track Inventory', path: '/Admin/MessManagement/TrackInventory' },
+        { name: 'Feedbacks', path: '/Admin/MessManagement/Feedbacks' },
         // { name: 'Mess Attendence', path: '/Admin/MessManagement/MessAttendance' },
       ],
     },
