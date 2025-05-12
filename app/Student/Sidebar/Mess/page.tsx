@@ -246,7 +246,7 @@ export default function MessContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {weekMenus.map((menu, index) => {
+                    {weekMenus.map((menu) => {
                       const isToday = menu.day_of_week === currentDayOfWeek;
                       return (
                         <tr
