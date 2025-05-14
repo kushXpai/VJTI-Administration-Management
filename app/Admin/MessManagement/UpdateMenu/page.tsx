@@ -138,7 +138,7 @@ export default function UpdateMessMenu() {
 
   useEffect(() => {
     fetchWeekMenus();
-  }, [ fetchWeekMenus ]);
+  }, []);
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
