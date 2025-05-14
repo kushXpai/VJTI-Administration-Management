@@ -95,7 +95,7 @@ export default function ManualAllocationModal({
     if (newSelectedFloor !== selectedFloor) {
       setSelectedFloor(newSelectedFloor);
     }
-  }, [isOpen, selectedBuilding, rooms, application, allowedBuildings, isAllocating]);
+  }, [isOpen, selectedBuilding, rooms, application, allowedBuildings, isAllocating, availableFloors, selectedFloor]);
 
   useEffect(() => {
     if (!isOpen || !selectedBuilding || selectedFloor === '' || !application || isAllocating) {
@@ -122,7 +122,7 @@ export default function ManualAllocationModal({
     if (newSelectedRoom !== selectedRoom) {
       setSelectedRoom(newSelectedRoom);
     }
-  }, [isOpen, selectedBuilding, selectedFloor, rooms, application, allowedBuildings, isAllocating]);
+  }, [isOpen, selectedBuilding, selectedFloor, rooms, application, allowedBuildings, isAllocating, availableRooms, selectedRoom]);
 
   const handleAllocate = async () => {
     if (!application || !selectedBuilding || selectedFloor === '' || selectedRoom === '') {

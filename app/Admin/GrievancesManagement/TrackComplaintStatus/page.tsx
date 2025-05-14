@@ -72,9 +72,11 @@ export default function TrackComplaintStatus() {
       } else {
         setError("No complaints found for this Student ID.");
       }
-    } catch (error: any) {
-      console.error("Error fetching grievances:", error);
-      setError(error.message || "Failed to fetch complaints. Please try again.");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch complaints. Please try again.";
+      console.error("Error fetching grievances:", err);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

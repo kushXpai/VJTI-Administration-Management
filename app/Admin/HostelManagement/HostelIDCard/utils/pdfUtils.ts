@@ -39,7 +39,7 @@ async function loadImageForPdf(pdf: PDFDocument, photoUrl: string) {
     // If Content-Type not available, try both formats
     try {
       return await pdf.embedJpg(bytes);
-    } catch (e) {
+    } catch {
       return await pdf.embedPng(bytes);
     }
   } catch (error) {
@@ -110,7 +110,7 @@ async function drawCard(
 
   // Vertical lines
   let curX = x + cmToPoints(0.5);
-  for (let w of colWidths) {
+  for (const w of colWidths) {
     page.drawLine({
       start: { x: curX, y: tableTopY },
       end: { x: curX, y: tableTopY - tableH },

@@ -134,7 +134,7 @@ export default function MessContent() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [ fetchTodayMenu, fetchWeekMenus, supabase]);
 
   const currentMeal = getCurrentMeal();
   const currentDayOfWeek = getCurrentDayOfWeek();
@@ -144,7 +144,7 @@ export default function MessContent() {
       <div className="max-w-6xl mx-auto">
         {!showWeek ? (
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-6 text-[#800000]">Today's Mess Menu</h2>
+            <h2 className="text-2xl font-bold mb-6 text-[#800000]">Today&apos;s Mess Menu</h2>
 
             {loading ? (
               <div className="flex justify-center items-center h-48">
@@ -226,7 +226,7 @@ export default function MessContent() {
                 onClick={() => setShowWeek(false)}
                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
               >
-                Back to Today's Menu
+                Back to Today&apos;s Menu
               </button>
             </div>
 
