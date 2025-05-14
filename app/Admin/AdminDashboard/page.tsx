@@ -38,7 +38,7 @@ export default function AdminDashboard() {
         { name: 'General Complaints', path: '/Admin/GrievancesManagement/GeneralComplaints' },
         { name: 'Track Complaint Status', path: '/Admin/GrievancesManagement/TrackComplaintStatus' },
         { name: 'Room Change Requests', path: '/Admin/GrievancesManagement/RoomChangeRequests' },
-        { name: 'Feedbacks', path: '/Admin/GrievancesManagement/Feedbacks' },
+        // { name: 'Feedbacks', path: '/Admin/GrievancesManagement/Feedbacks' },
       ],
     },
     {
@@ -47,7 +47,7 @@ export default function AdminDashboard() {
         { name: 'Update Mess Menu', path: '/Admin/MessManagement/UpdateMenu' },
         { name: 'Manage Payments', path: '/Admin/MessManagement/ManagePayments' },
         { name: 'Track Inventory', path: '/Admin/MessManagement/TrackInventory' },
-        { name: 'Feedbacks', path: '/Admin/MessManagement/Feedbacks' },
+        // { name: 'Feedbacks', path: '/Admin/MessManagement/Feedbacks' },
         // { name: 'Mess Attendence', path: '/Admin/MessManagement/MessAttendance' },
       ],
     },
