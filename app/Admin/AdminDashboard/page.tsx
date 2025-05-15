@@ -46,17 +46,17 @@ export default function AdminDashboard() {
       items: [
         { name: 'Update Mess Menu', path: '/Admin/MessManagement/UpdateMenu' },
         { name: 'Manage Payments', path: '/Admin/MessManagement/ManagePayments' },
-        { name: 'Track Inventory', path: '/Admin/MessManagement/TrackInventory' },
+        // { name: 'Track Inventory', path: '/Admin/MessManagement/TrackInventory' },
         // { name: 'Feedbacks', path: '/Admin/MessManagement/Feedbacks' },
         // { name: 'Mess Attendence', path: '/Admin/MessManagement/MessAttendance' },
       ],
     },
-    {
-      title: 'To be deleted during submission',
-      items: [
-        { name: 'Database', path: '/Admin/Database/ViewDatabases' },
-      ],
-    },
+    // {
+    //   title: 'To be deleted during submission',
+    //   items: [
+    //     { name: 'Database', path: '/Admin/Database/ViewDatabases' },
+    //   ],
+    // },
   ];
 
   return (
