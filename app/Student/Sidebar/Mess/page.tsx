@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface Menu {
@@ -45,7 +45,7 @@ export default function MessContent() {
     return day === 0 ? 6 : day - 1; // Convert Sunday (0) to 6, Monday (1) to 0, etc.
   };
 
-  const fetchWeekMenus = async () => {
+  const fetchWeekMenus = useCallback(async () => {
     setLoading(true);
     try {
       const currentWeekNumber = getCurrentWeekNumber();
@@ -62,9 +62,9 @@ export default function MessContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
 
-  const fetchTodayMenu = async () => {
+  const fetchTodayMenu = useCallback(async () => {
     try {
       const currentWeekNumber = getCurrentWeekNumber();
       const currentDayOfWeek = getCurrentDayOfWeek();
@@ -81,7 +81,7 @@ export default function MessContent() {
       console.error('Error fetching today menu:', err);
       setTodayMenu(null);
     }
-  };
+  }, [supabase]);
 
   const getCurrentMeal = () => {
     const hour = new Date().getHours();
@@ -134,7 +134,7 @@ export default function MessContent() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [ fetchTodayMenu, fetchWeekMenus, supabase]);
+  }, [fetchTodayMenu, fetchWeekMenus, supabase]);
 
   const currentMeal = getCurrentMeal();
   const currentDayOfWeek = getCurrentDayOfWeek();
