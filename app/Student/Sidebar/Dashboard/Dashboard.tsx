@@ -1,12 +1,12 @@
 // app/Student/Sidebar/Dashboard/Dashboard.tsx
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { FiCoffee, FiAlertCircle, FiCalendar, FiBook } from 'react-icons/fi';
 import { FaBuilding } from 'react-icons/fa';
 import { supabase } from '@/supabase/supabaseClient';
-
 
 interface User {
   name: string;
@@ -30,6 +30,7 @@ export default function Dashboard({ user }: DashboardProps) {
   const [allotmentDetails, setAllotmentDetails] = useState<AllotmentDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [grievanceStats, setGrievanceStats] = useState<{ inProgress: number; resolved: number; rejected: number }>({ inProgress: 0, resolved: 0, rejected: 0 });
 
   useEffect(() => {
     async function fetchAllotmentDetails() {
@@ -65,12 +66,36 @@ export default function Dashboard({ user }: DashboardProps) {
       } catch (error) {
         console.error('Unexpected error fetching allotment details:', error);
         setError('An unexpected error occurred. Please try again later.');
-      } finally {
-        setIsLoading(false);
       }
     }
 
-    fetchAllotmentDetails();
+    async function fetchGrievanceStats() {
+      if (!user || !user.id) {
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('grievances')
+          .select('status')
+          .eq('student_id', user.id);
+
+        if (error) {
+          console.error('Error fetching grievance stats:', error.message);
+          return;
+        }
+
+        const inProgressCount = data.filter((g: { status: string }) => g.status === 'In Progress').length;
+        const resolvedCount = data.filter((g: { status: string }) => g.status === 'Resolved').length;
+        const rejectedCount = data.filter((g: { status: string }) => g.status === 'Rejected').length;
+
+        setGrievanceStats({ inProgress: inProgressCount, resolved: resolvedCount, rejected: rejectedCount });
+      } catch (error) {
+        console.error('Unexpected error fetching grievance stats:', error);
+      }
+    }
+
+    Promise.all([fetchAllotmentDetails(), fetchGrievanceStats()]).finally(() => setIsLoading(false));
   }, [user]);
 
   if (isLoading) return <div>Loading dashboard...</div>;
@@ -116,8 +141,9 @@ export default function Dashboard({ user }: DashboardProps) {
             <h3 className="font-semibold text-gray-700">Pending Concerns</h3>
             <FiAlertCircle className="text-red-800" size={18} />
           </div>
-          <p className="text-3xl font-bold text-gray-800 mb-1">1</p>
-          <p className="text-sm text-gray-500">1 in progress • 2 resolved</p>
+          <p className="text-3xl font-bold text-gray-800 mb-1">{grievanceStats.inProgress}</p>
+          <p className="text-sm text-gray-500">{grievanceStats.resolved} resolved</p>
+          <p className="text-sm text-gray-500">{grievanceStats.rejected} rejected</p>
         </div>
       </div>
 
@@ -142,9 +168,8 @@ export default function Dashboard({ user }: DashboardProps) {
                 <span className="text-xs text-gray-500">March 25, 2025</span>
               </div>
               <p className="text-sm text-gray-600">
-  The hostel will remain open during the upcoming holidays. Students planning to stay must register at the warden&rsquo;s office.
-</p>
-
+                The hostel will remain open during the upcoming holidays. Students planning to stay must register at the warden’s office.
+              </p>
             </div>
             <div className="p-5 hover:bg-gray-50">
               <div className="flex justify-between mb-1">
