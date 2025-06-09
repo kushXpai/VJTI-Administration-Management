@@ -757,7 +757,7 @@ import useStudentSearch from '../hooks/useStudentSearch';
 import { toast } from 'react-hot-toast';
 import Select from 'react-select';
 import Modal from 'react-modal';
-import { StudentResult, Room } from '../types';
+import { StudentResult } from '../types';
 
 // Set app element dynamically on client side
 if (typeof window !== 'undefined') {
@@ -788,7 +788,7 @@ const SearchComponent = ({ onSwap }: { onSwap: (students: StudentResult[]) => vo
 
   useEffect(() => {
     fetchBuildings();
-  }, []);
+  }, [ fetchBuildings ]);
 
   useEffect(() => {
     if (building) {
@@ -796,7 +796,7 @@ const SearchComponent = ({ onSwap }: { onSwap: (students: StudentResult[]) => vo
     } else {
       setRoom('');
     }
-  }, [building]);
+  }, [ fetchRooms, building ]);
 
   const handleSearch = async () => {
     console.log('Searching with term:', searchTerm);

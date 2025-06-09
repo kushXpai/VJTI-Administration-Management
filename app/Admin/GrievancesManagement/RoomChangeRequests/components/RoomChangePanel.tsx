@@ -20,6 +20,11 @@ const RoomChangePanel: React.FC<RoomChangePanelProps> = ({
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
+  const fetchRooms = async () => {
+    const rooms = await onFetchRooms();
+    setAvailableRooms(rooms);
+  };
+
   useEffect(() => {
     if (selectedStudent) {
       fetchRooms();
@@ -27,12 +32,8 @@ const RoomChangePanel: React.FC<RoomChangePanelProps> = ({
       setAvailableRooms([]);
       setSelectedRoom(null);
     }
-  }, [selectedStudent]);
+  }, [fetchRooms, selectedStudent]);
 
-  const fetchRooms = async () => {
-    const rooms = await onFetchRooms();
-    setAvailableRooms(rooms);
-  };
 
   const handleRoomChange = async () => {
     if (!selectedStudent || !selectedRoom) return;
@@ -45,7 +46,7 @@ const RoomChangePanel: React.FC<RoomChangePanelProps> = ({
 
     if (success) {
       setSelectedRoom(null);
-      fetchRooms(); // Refresh available rooms
+      fetchRooms();
     }
   };
 
@@ -71,7 +72,7 @@ const RoomChangePanel: React.FC<RoomChangePanelProps> = ({
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Rooms</h3>
           <div className="grid gap-3 max-h-96 overflow-y-auto">
-            {availableRooms.map((room, index) => (
+            {availableRooms.map((room) => (
               <div
                 key={`${room.building_name}-${room.room_number}`}
                 onClick={() => setSelectedRoom(room)}
@@ -117,7 +118,7 @@ const RoomChangePanel: React.FC<RoomChangePanelProps> = ({
               <div className="flex justify-between items-center">
                 <div>
                   <p className="font-medium text-gray-900">
-                    Change {selectedStudent.name}'s room to:
+                    Change {selectedStudent.name}&apos;s room to:
                   </p>
                   <p className="text-gray-600">
                     {selectedRoom.building_name} - Room {selectedRoom.room_number}

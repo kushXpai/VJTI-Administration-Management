@@ -14,6 +14,8 @@ export interface StudentResult {
     id: string;
     building_name: string;
     room_number: string;
+    type: string;
+    floor: number;
     capacity: number;
     vacant: number;
     occupants: number;

@@ -3,7 +3,6 @@
 import React from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 import { Student } from '../types';
-import StudentInfoCard from './StudentInfoCard';
 
 interface RoomSwapPanelProps {
   student1: Student | null;
