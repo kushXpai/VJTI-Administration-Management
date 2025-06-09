@@ -1,6 +1,3 @@
-
-
-
 import { Floor } from '../types';
 import RoomMembersPopup from './RoomMembersPopup';
 
@@ -27,7 +24,7 @@ const RoomCard = ({
       onMouseEnter={() => onHover(room.id)}
       onMouseLeave={() => onHover(null)}
     >
-      <div className="font-bold text-blue-800">{room.id}</div>
+      <div className="font-bold text-blue-800">Room {room.id}</div>
       <div className="text-sm">
         <div>Capacity: {room.capacity}</div>
         <div
@@ -68,4 +65,3 @@ const RoomCard = ({
 };
 
 export default RoomCard;
-// This component represents a card for each room in the hostel.

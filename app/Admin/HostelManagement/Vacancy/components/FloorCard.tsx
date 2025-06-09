@@ -16,6 +16,8 @@ const FloorCard = ({
   getRoomStatusColor,
   getStatusTextColor,
 }: FloorCardProps) => {
+  console.log(`Rendering FloorCard for floor ${floor.id}:`, floor);
+
   return (
     <div className="bg-white rounded-lg p-4 mb-6 shadow-md">
       <div className="font-bold text-lg mb-4">

@@ -8,7 +8,6 @@ import RoomsView from './components/RoomsView';
 import { useBuildings } from './hooks/useBuildings';
 import { useFloors } from './hooks/useFloors';
 
-
 export default function Vacancy() {
   const [activeView, setActiveView] = useState<'buildings' | 'rooms'>(
     'buildings'

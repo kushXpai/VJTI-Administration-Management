@@ -21,6 +21,8 @@ const RoomsView = ({
   getRoomStatusColor,
   getStatusTextColor,
 }: RoomsViewProps) => {
+  console.log('RoomsView received floors:', floors);
+
   if (!block) return null;
 
   return (
