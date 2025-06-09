@@ -57,7 +57,7 @@ export default function MessContent() {
 
       if (error) throw error;
       setWeekMenus(data || []);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error fetching week menus:', err);
     } finally {
       setLoading(false);
@@ -77,7 +77,7 @@ export default function MessContent() {
 
       if (error) throw error;
       setTodayMenu(data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error fetching today menu:', err);
       setTodayMenu(null);
     }

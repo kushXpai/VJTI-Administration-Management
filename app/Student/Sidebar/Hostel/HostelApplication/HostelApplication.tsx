@@ -55,13 +55,13 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
         aadhar_card_number: '',
     });
 
-    // File state
+    const [ageError, setAgeError] = useState<string>('');
+
     const [photo, setPhoto] = useState<File | null>(null);
     const [aadharCard, setAadharCard] = useState<File | null>(null);
     const [acknowledgementReceipt, setAcknowledgementReceipt] = useState<File | null>(null);
     const [feeReceipt, setFeeReceipt] = useState<File | null>(null);
 
-    // Loading state
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -75,8 +75,54 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
             const { checked } = e.target as HTMLInputElement;
             setFormData(prev => ({ ...prev, [name]: checked }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData(prev => {
+                const newFormData = { ...prev, [name]: value };
+                
+                if (name === 'date_of_birth' || name === 'course') {
+                    const dateOfBirth = name === 'date_of_birth' ? value : newFormData.date_of_birth;
+                    const course = name === 'course' ? value : newFormData.course;
+                    
+                    const validation = validateAge(dateOfBirth, course);
+                    setAgeError(validation.isValid ? '' : validation.message);
+                }
+                
+                return newFormData;
+            });
         }
+    };
+
+    const getMinimumAge = (course: string) => {
+        if (course.startsWith('Diploma')) {
+            return { years: 15, months: 6 };
+        } else if (course.startsWith('BTech')) {
+            return { years: 17, months: 6 };
+        } else if (course === 'MCA') {
+            return { years: 20, months: 6 };
+        } else if (course.startsWith('MTech')) {
+            return { years: 21, months: 6 };
+        }
+        return { years: 15, months: 6 };
+    };
+
+    const validateAge = (dateOfBirth: string, course: string) => {
+        if (!dateOfBirth || !course) return { isValid: true, message: '' };
+        
+        const birthDate = new Date(dateOfBirth);
+        const currentDate = new Date();
+        const minAge = getMinimumAge(course);
+        
+        const minBirthDate = new Date(currentDate);
+        minBirthDate.setFullYear(currentDate.getFullYear() - minAge.years);
+        minBirthDate.setMonth(currentDate.getMonth() - minAge.months);
+        
+        if (birthDate > minBirthDate) {
+            return {
+                isValid: false,
+                message: `Minimum age requirement: ${minAge.years} years and ${minAge.months} months for ${course.replace(/([A-Z])/g, ' $1').trim()}`
+            };
+        }
+        
+        return { isValid: true, message: '' };
     };
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>, setFile: (file: File | null) => void) => {
@@ -88,7 +134,6 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
     const uploadFile = async (file: File, bucket: string) => {
         const fileExt = file.name.split('.').pop();
 
-        // Create specific file name prefix based on bucket type
         let filePrefix = '';
         switch (bucket) {
             case 'student_photos':
@@ -116,7 +161,6 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
 
         if (error) throw error;
 
-        // Get the public URL
         const { data: urlData } = supabase
             .storage
             .from(bucket)
@@ -129,6 +173,13 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
+
+        const ageValidation = validateAge(formData.date_of_birth, formData.course);
+        if (!ageValidation.isValid) {
+            setError(ageValidation.message);
+            setIsLoading(false);
+            return;
+        }
 
         try {
             let photoUrl = null;
@@ -212,6 +263,105 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+
+                {/* Academic Information */}
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h2 className="text-xl font-semibold mb-4">Academic Information</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">CET Application ID</label>
+                            <input
+                                type="text"
+                                name="cet_application_id"
+                                value={formData.cet_application_id}
+                                onChange={handleChange}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">CET Rank</label>
+                            <input
+                                type="number"
+                                name="cet_rank"
+                                value={formData.cet_rank}
+                                onChange={handleChange}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Course</label>
+                            <select
+                                name="course"
+                                value={formData.course}
+                                onChange={handleChange}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-800 focus:ring-red-800"
+                                required
+                            >
+                                <option value="">Select a course</option>
+                                {/* Diploma Courses */}
+                                <optgroup label="Diploma Courses">
+                                    <option value="DiplomaCivilEngineering">Diploma in Civil Engineering</option>
+                                    <option value="DiplomaElectricalEngineering">Diploma in Electrical Engineering</option>
+                                    <option value="DiplomaElectronicsEngineering">Diploma in Electronics Engineering</option>
+                                    <option value="DiplomaMechanicalEngineering">Diploma in Mechanical Engineering</option>
+                                    <option value="DiplomaTextileManufacturers">Diploma in Textile Manufacturers</option>
+                                    <option value="DiplomaChemicalEngineering">Diploma in Chemical Engineering</option>
+                                </optgroup>
+                                {/* Bachelor of Technology Degree Courses */}
+                                <optgroup label="Undergraduate Courses">
+                                    <option value="BTechCivilEngineering">B.Tech Degree in Civil Engineering</option>
+                                    <option value="BTechComputerEngineering">B.Tech Degree in Computer Engineering</option>
+                                    <option value="BTechElectricalEngineering">B.Tech Degree in Electrical Engineering</option>
+                                    <option value="BTechElectronicsEngineering">B.Tech Degree in Electronics Engineering</option>
+                                    <option value="BTechElectronicsTelecommunicationEngineering">B.Tech Degree in Electronics &amp; Telecommunication Engineering</option>
+                                    <option value="BTechInformationTechnology">B.Tech Degree in Information Technology</option>
+                                    <option value="BTechMechanicalEngineering">B.Tech Degree in Mechanical Engineering</option>
+                                    <option value="BTechProductionEngineering">B.Tech Degree in Production Engineering</option>
+                                    <option value="BTechTextileTechnology">B.Tech Degree in Textile Technology</option>
+                                </optgroup>
+                                {/* Master of Technology Degree Courses */}
+                                <optgroup label="Postgraduate Courses">
+                                    <option value="MCA">Master of Computer Application</option>
+                                    <option value="MTechCivilEngineering">M.Tech Degree in Civil Engineering</option>
+                                    <option value="MTechComputerEngineering">M.Tech Degree in Computer Engineering</option>
+                                    <option value="MTechElectricalEngineering">M.Tech Degree in Electrical Engineering</option>
+                                    <option value="MTechIOT">M.Tech Degree in Internet of Things (IOT)</option>
+                                    <option value="MTechElectronicsTelecommunicationEngineering">M.Tech Degree in Electronics &amp; Telecommunication Engineering</option>
+                                    <option value="MTechMechanicalEngineering">M.Tech Degree in Mechanical Engineering</option>
+                                    <option value="MTechProductionEngineering">M.Tech Degree in Production Engineering</option>
+                                    <option value="MTechProjectManagement">M.Tech Degree in Project Management</option>
+                                    <option value="MTechTechnicalTextile">M.Tech Degree in Technical Textile</option>
+                                    <option value="MTechDefenceTechnology">M.Tech Degree in Defence Technology</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Category</label>
+                            <select
+                                name="category"
+                                value={formData.category}
+                                onChange={handleChange}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-800 focus:ring-red-800"
+                                required
+                            >
+                                <option value="">Select Category</option>
+                                <option value="General">General</option>
+                                <option value="OBC">OBC</option>
+                                <option value="SC">SC</option>
+                                <option value="ST">ST</option>
+                                <option value="NT">NT</option>
+                                <option value="SBC">SBC</option>
+                                <option value="SEBC">SEBC</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
                 {/* Personal Information */}
                 <div className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-semibold mb-4">Personal Information</h2>
@@ -223,9 +373,14 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                                 name="date_of_birth"
                                 value={formData.date_of_birth}
                                 onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className={`mt-1 block w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${
+                                    ageError ? 'border-red-500' : 'border-gray-300'
+                                }`}
                                 required
                             />
+                            {ageError && (
+                                <p className="mt-1 text-sm text-red-600">{ageError}</p>
+                            )}
                         </div>
 
                         <div>
@@ -477,104 +632,6 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 required
                             />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Academic Information */}
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h2 className="text-xl font-semibold mb-4">Academic Information</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">CET Application ID</label>
-                            <input
-                                type="text"
-                                name="cet_application_id"
-                                value={formData.cet_application_id}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">CET Rank</label>
-                            <input
-                                type="number"
-                                name="cet_rank"
-                                value={formData.cet_rank}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Course</label>
-                            <select
-                                name="course"
-                                value={formData.course}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-800 focus:ring-red-800"
-                                required
-                            >
-                                <option value="">Select a course</option>
-                                {/* Diploma Courses */}
-                                <optgroup label="Diploma Courses">
-                                    <option value="DiplomaCivilEngineering">Diploma in Civil Engineering</option>
-                                    <option value="DiplomaElectricalEngineering">Diploma in Electrical Engineering</option>
-                                    <option value="DiplomaElectronicsEngineering">Diploma in Electronics Engineering</option>
-                                    <option value="DiplomaMechanicalEngineering">Diploma in Mechanical Engineering</option>
-                                    <option value="DiplomaTextileManufacturers">Diploma in Textile Manufacturers</option>
-                                    <option value="DiplomaChemicalEngineering">Diploma in Chemical Engineering</option>
-                                </optgroup>
-                                {/* Bachelor of Technology Degree Courses */}
-                                <optgroup label="Undergraduate Courses">
-                                    <option value="BTechCivilEngineering">B.Tech Degree in Civil Engineering</option>
-                                    <option value="BTechComputerEngineering">B.Tech Degree in Computer Engineering</option>
-                                    <option value="BTechElectricalEngineering">B.Tech Degree in Electrical Engineering</option>
-                                    <option value="BTechElectronicsEngineering">B.Tech Degree in Electronics Engineering</option>
-                                    <option value="BTechElectronicsTelecommunicationEngineering">B.Tech Degree in Electronics &amp; Telecommunication Engineering</option>
-                                    <option value="BTechInformationTechnology">B.Tech Degree in Information Technology</option>
-                                    <option value="BTechMechanicalEngineering">B.Tech Degree in Mechanical Engineering</option>
-                                    <option value="BTechProductionEngineering">B.Tech Degree in Production Engineering</option>
-                                    <option value="BTechTextileTechnology">B.Tech Degree in Textile Technology</option>
-                                </optgroup>
-                                {/* Master of Technology Degree Courses */}
-                                <optgroup label="Postgraduate Courses">
-                                    <option value="MCA">Master of Computer Application</option>
-                                    <option value="MTechCivilEngineering">M.Tech Degree in Civil Engineering</option>
-                                    <option value="MTechComputerEngineering">M.Tech Degree in Computer Engineering</option>
-                                    <option value="MTechElectricalEngineering">M.Tech Degree in Electrical Engineering</option>
-                                    <option value="MTechIOT">M.Tech Degree in Internet of Things (IOT)</option>
-                                    <option value="MTechElectronicsTelecommunicationEngineering">M.Tech Degree in Electronics &amp; Telecommunication Engineering</option>
-                                    <option value="MTechMechanicalEngineering">M.Tech Degree in Mechanical Engineering</option>
-                                    <option value="MTechProductionEngineering">M.Tech Degree in Production Engineering</option>
-                                    <option value="MTechProjectManagement">M.Tech Degree in Project Management</option>
-                                    <option value="MTechTechnicalTextile">M.Tech Degree in Technical Textile</option>
-                                    <option value="MTechDefenceTechnology">M.Tech Degree in Defence Technology</option>
-                                </optgroup>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Category</label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-800 focus:ring-red-800"
-                                required
-                            >
-                                <option value="">Select Category</option>
-                                <option value="General">General</option>
-                                <option value="OBC">OBC</option>
-                                <option value="SC">SC</option>
-                                <option value="ST">ST</option>
-                                <option value="NT">NT</option>
-                                <option value="SBC">SBC</option>
-                                <option value="SEBC">SEBC</option>
-                            </select>
                         </div>
                     </div>
                 </div>
