@@ -48,7 +48,7 @@ const useStudentSearch = () => {
       console.error(`Failed to update occupants for ${buildingName}-${roomNumber}:`, err.message);
       throw err;
     }
-  }, []);
+  }, [ supabase ]);
 
   const searchStudents = useCallback(async (term: string) => {
     setLoading(true);
@@ -221,7 +221,7 @@ const useStudentSearch = () => {
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('room_number, capacity, vacant, occupants, occupants_list')
+        .select('room_number, capacity, vacant, occupants, occupants_list, type, floor')
         .eq('building_name', buildingName)
         .order('room_number');
       if (error) throw error;
@@ -233,6 +233,8 @@ const useStudentSearch = () => {
         vacant: room.vacant || 0,
         occupants: room.occupants || 0,
         occupants_list: room.occupants_list || [],
+        type: room.type || 'default',
+        floor: room.floor || 0, 
       }));
       setRooms(formattedRooms);
       console.log('Fetched rooms:', formattedRooms);

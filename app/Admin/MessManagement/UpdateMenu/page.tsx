@@ -46,7 +46,7 @@ export default function UpdateMessMenu() {
     return weekNumber;
   };
 
-  const checkDatabaseConnection = async () => {
+  const checkDatabaseConnection = useCallback(async () => {
     try {
       const { error } = await supabase.from('mess_menu_weekly').select('*').limit(1);
       if (error) throw error;
@@ -57,7 +57,7 @@ export default function UpdateMessMenu() {
       setError(`Database connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       return false;
     }
-  };
+  }, [supabase]);
 
   const fetchWeekMenus = useCallback(async () => {
     setLoading(true);
@@ -100,7 +100,8 @@ export default function UpdateMessMenu() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, checkDatabaseConnection]);
+
 
   const handleChange = (index: number, field: keyof Omit<Menu, 'week_number' | 'day_of_week'>, value: string) => {
     const updatedMenus = [...weekMenus];
