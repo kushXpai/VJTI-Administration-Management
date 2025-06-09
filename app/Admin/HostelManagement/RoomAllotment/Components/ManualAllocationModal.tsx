@@ -1,7 +1,7 @@
 // app/Admin/HostelManagement/RoomAllotment/Components/ManualAllocationModal.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/supabase/supabaseClient';
 import { HostelApplication, Room, HostelBlock } from '../Types/Type';
 import { useNotification } from '../Contexts/NotificationContext';
@@ -35,10 +35,10 @@ export default function ManualAllocationModal({
     return gender === 'Male' ? 'Boys' : 'Girls';
   };
 
-  const allowedBuildings: Record<string, HostelBlock[]> = {
+  const allowedBuildings = useMemo<Record<string, HostelBlock[]>>(() => ({
     Boys: ['PG Block', 'C Block', 'D Block'],
     Girls: ['B Block'],
-  };
+  }), []);
 
   const areRoomsEqual = (rooms1: Room[], rooms2: Room[]): boolean => {
     if (rooms1.length !== rooms2.length) return false;

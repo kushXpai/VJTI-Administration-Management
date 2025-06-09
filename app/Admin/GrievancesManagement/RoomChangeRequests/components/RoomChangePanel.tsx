@@ -1,6 +1,6 @@
 // components/RoomChangePanel.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Student, Room } from '../types';
 import StudentInfoCard from './StudentInfoCard';
 
@@ -20,10 +20,10 @@ const RoomChangePanel: React.FC<RoomChangePanelProps> = ({
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     const rooms = await onFetchRooms();
     setAvailableRooms(rooms);
-  };
+  }, [onFetchRooms]);
 
   useEffect(() => {
     if (selectedStudent) {

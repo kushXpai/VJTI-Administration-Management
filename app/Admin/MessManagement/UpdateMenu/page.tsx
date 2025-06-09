@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -59,7 +59,7 @@ export default function UpdateMessMenu() {
     }
   };
 
-  const fetchWeekMenus = async () => {
+  const fetchWeekMenus = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -67,7 +67,6 @@ export default function UpdateMessMenu() {
       if (!isConnected) return;
 
       const currentWeekNumber = getCurrentWeekNumber();
-
       const { data, error } = await supabase
         .from('mess_menu_weekly')
         .select('*')
@@ -85,12 +84,10 @@ export default function UpdateMessMenu() {
       }));
 
       if (!data?.length) {
-        // No data for the current week, create a new blank week
         await supabase.from('mess_menu_weekly').upsert(emptyWeek);
         setWeekMenus(emptyWeek);
         toast.success('New week created with blank menus');
       } else {
-        // Merge existing data with empty week template
         const fullWeek = emptyWeek.map(emptyDay => {
           const existingDay = data.find(d => d.day_of_week === emptyDay.day_of_week);
           return existingDay || emptyDay;
@@ -103,7 +100,7 @@ export default function UpdateMessMenu() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
 
   const handleChange = (index: number, field: keyof Omit<Menu, 'week_number' | 'day_of_week'>, value: string) => {
     const updatedMenus = [...weekMenus];
@@ -138,7 +135,7 @@ export default function UpdateMessMenu() {
 
   useEffect(() => {
     fetchWeekMenus();
-  }, [ fetchWeekMenus ]);
+  }, [fetchWeekMenus]);
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
