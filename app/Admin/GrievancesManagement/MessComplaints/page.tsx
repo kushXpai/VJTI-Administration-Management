@@ -5,12 +5,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabase/supabaseClient";
 import Image from 'next/image';
+import jsPDF from 'jspdf';
 
 // Define a type for the grievance object
 interface Grievance {
   id: string;
   issue_text: string;
   student_id: string;
+  student_name: string;
   created_at: string;
   status: "Pending" | "In Progress" | "Resolved" | "Rejected";
   is_opened: boolean;
@@ -34,12 +36,23 @@ export default function MessComplaints() {
   const fetchGrievances = async () => {
     setLoading(true);
     try {
-      // Make sure we're using the correct table and query
-      console.log("Fetching grievances...");
+      console.log("Fetching grievances with student names...");
       
       const { data, error } = await supabase
         .from("grievances")
-        .select("*")
+        .select(`
+          id,
+          issue_text,
+          student_id,
+          created_at,
+          status,
+          is_opened,
+          category,
+          image_url,
+          resolved_at,
+          remark,
+          profiles!grievances_student_id_fkey(name)
+        `)
         .eq("category", "Mess")
         .order("created_at", { ascending: false });
         
@@ -48,14 +61,89 @@ export default function MessComplaints() {
         throw error;
       }
       
-      console.log("Grievances fetched successfully:", data);
-      setGrievances(data || []);
-    } catch (error) {
-      console.error("Error fetching grievances:", error);
-      alert("Failed to fetch grievances. Please refresh the page.");
+      const formattedData: Grievance[] = data.map((item: any) => ({
+        id: item.id,
+        issue_text: item.issue_text,
+        student_id: item.student_id,
+        student_name: item.profiles?.name || "Unknown",
+        created_at: item.created_at,
+        status: item.status,
+        is_opened: item.is_opened,
+        category: item.category,
+        image_url: item.image_url,
+        resolved_at: item.resolved_at,
+        remark: item.remark,
+      }));
+      
+      console.log("Grievances fetched successfully:", formattedData);
+      setGrievances(formattedData);
+    } catch (error: any) {
+      console.error("Error fetching grievances:", error.message, error.details);
+      alert("Failed to fetch grievances. Please ensure the database schema is correct and try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const inProgressComplaints = grievances.filter(g => g.status === "In Progress");
+    
+    const logo = "/images/vjti_logo.png";
+    const logoWidth = 30;
+    const logoHeight = 33;
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.addImage(logo, 'PNG', 15, 5, logoWidth, logoHeight);
+
+    doc.setFontSize(16);
+    const title = "Mess Complaints";
+    const titleWidth = doc.getTextWidth(title);
+    doc.text(title, (pageWidth - titleWidth) / 2, 25);
+
+    doc.setFontSize(12);
+    doc.text("Student ID", 20, 45);
+    doc.text("Student Name", 50, 45);
+    doc.text("Issue", 90, 45);
+    doc.text("Submitted On", 160, 45);
+    
+    doc.setLineWidth(0.5);
+    doc.line(20, 47, 190, 47);
+    
+    let y = 55;
+    inProgressComplaints.forEach((complaint, index) => {
+      const studentIdLines = doc.splitTextToSize(complaint.student_id, 25);
+      const studentNameLines = doc.splitTextToSize(complaint.student_name, 35);
+      const issueLines = doc.splitTextToSize(complaint.issue_text, 65);
+      const dateLines = doc.splitTextToSize(new Date(complaint.created_at).toLocaleDateString(), 30);
+      
+      doc.text(studentIdLines, 20, y);
+      doc.text(studentNameLines, 50, y);
+      doc.text(issueLines, 90, y);
+      doc.text(dateLines, 160, y);
+      
+      const rowHeight = Math.max(studentIdLines.length, studentNameLines.length, issueLines.length, dateLines.length) * 7 + 5;
+      y += rowHeight;
+      
+      if (y > 270) {
+        doc.addPage();
+        doc.addImage(logo, 'PNG', 15, 5, logoWidth, logoHeight);
+        doc.setFontSize(16);
+        doc.text(title, (pageWidth - titleWidth) / 2, 25);
+        doc.setFontSize(12);
+        doc.text("Student ID", 20, 45);
+        doc.text("Student Name", 50, 45);
+        doc.text("Issue", 90, 45);
+        doc.text("Submitted On", 160, 45);
+        doc.line(20, 47, 190, 45);
+        y = 55;
+      }
+    });
+    
+    const currentDate = new Date().toISOString().slice(0, 10);
+    const filename = `mess_complaints_${currentDate}.pdf`;
+    
+    doc.save(filename);
   };
 
   const updateStatus = async (id: string, newStatus: string, remark?: string) => {
@@ -80,7 +168,6 @@ export default function MessComplaints() {
         updates.remark = null;
       }
 
-      // Ensure we're using the correct table name and proper database connection
       const { error } = await supabase
         .from("grievances")
         .update(updates)
@@ -91,7 +178,6 @@ export default function MessComplaints() {
         throw error;
       }
       
-      // Verify the update by fetching the updated record
       const { data: updatedData, error: fetchError } = await supabase
         .from("grievances")
         .select("*")
@@ -104,19 +190,15 @@ export default function MessComplaints() {
         console.log("Status updated successfully, verified data:", updatedData);
       }
       
-      // Refresh the entire grievances list
       await fetchGrievances();
       
-      // If we're viewing the updated complaint, update the selected complaint as well
       if (selectedComplaint && selectedComplaint.id === id) {
-        // Get the fresh data from the updated grievances list
         const updatedGrievance = grievances.find(g => g.id === id);
         if (updatedGrievance) {
           setSelectedComplaint(updatedGrievance);
         }
       }
 
-      // Clear UI states
       setShowRejectBox(false);
       setRejectRemark("");
       
@@ -132,8 +214,6 @@ export default function MessComplaints() {
     try {
       console.log("Marking grievance as opened:", id);
       
-      // Update in the database
-        
       const { error } = await supabase
         .from('grievances')
         .update({ is_opened: true })
@@ -146,7 +226,6 @@ export default function MessComplaints() {
       
       console.log("Successfully marked as opened in database");
       
-      // Update the local state immediately
       setGrievances(prevGrievances => 
         prevGrievances.map(g => 
           g.id === id ? { ...g, is_opened: true } : g
@@ -160,16 +239,13 @@ export default function MessComplaints() {
   };
 
   useEffect(() => {
-    // Check if Supabase client is properly initialized
     if (!supabase) {
       console.error("Supabase client is not initialized");
       return;
     }
     
-    // Fetch initial data
     fetchGrievances();
     
-    // Setup real-time subscription to grievances table
     const subscription = supabase
       .channel('grievances-changes')
       .on('postgres_changes', 
@@ -181,13 +257,11 @@ export default function MessComplaints() {
         }, 
         (payload) => {
           console.log('Change received!', payload);
-          // Refresh data when there's a change
           fetchGrievances();
         }
       )
       .subscribe();
       
-    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
     };
@@ -235,7 +309,6 @@ export default function MessComplaints() {
           try {
             await updateStatus(selectedComplaint.id, selectedStatusForUpdate);
             
-            // Verify the update was successful
             const { data, error } = await supabase
               .from("grievances")
               .select("*")
@@ -278,7 +351,6 @@ export default function MessComplaints() {
       try {
         await updateStatus(selectedComplaint.id, "Rejected", rejectRemark);
         
-        // Double-check if the update was successful
         const { data, error } = await supabase
           .from("grievances")
           .select("*")
@@ -350,12 +422,10 @@ export default function MessComplaints() {
   };
 
   const handleComplaintClick = async (grievance: Grievance) => {
-    // First mark as opened
     if (!grievance.is_opened) {
       await markAsOpened(grievance.id);
     }
     
-    // Then set as selected complaint
     setSelectedComplaint(grievance);
   };
 
@@ -383,6 +453,12 @@ export default function MessComplaints() {
               <option value="Resolved">Resolved</option>
               <option value="Rejected">Rejected</option>
             </select>
+            <button
+              onClick={generatePDF}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all font-medium"
+            >
+              Generate PDF
+            </button>
           </div>
         </div>
 
@@ -419,7 +495,7 @@ export default function MessComplaints() {
                       )}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
-                      Student ID: {g.student_id} • Submitted: {new Date(g.created_at).toLocaleDateString()}
+                      Student: {g.student_name} (ID: {g.student_id}) • Submitted: {new Date(g.created_at).toLocaleDateString()}
                     </div>
                   </div>
                   <span
@@ -439,8 +515,7 @@ export default function MessComplaints() {
           <div className="bg-white p-8 rounded-lg max-w-2xl w-full shadow-2xl relative border">
             <button
               onClick={() => setSelectedComplaint(null)}
-              className="absolute top-4 right-4 w-8 h-8 bg-red-500 text-white flex items-center justify-center rounded-full transform transition-all hover:bg-red-600 hover:scale-105 active:scale-95"
-            >
+              className="absolute top-4 right-4 w-8 h-8 bg-red-500 text-white flex items-center justify-center rounded-full transform transition-all hover:bg-red-600 hover:scale-105 active:scale-95">
               ✕
             </button>
 
@@ -460,13 +535,17 @@ export default function MessComplaints() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+            <div className="grid grid-cols-2 gap-4 text-sm mb-6">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium">Student Name:</p>
+                <p>{selectedComplaint.student_name}</p>
+              </div>
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium">Student ID:</p>
                 <p>{selectedComplaint.student_id}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">Submitted on:</p>
+                <p className="font-medium">Submitted On:</p>
                 <p>{new Date(selectedComplaint.created_at).toLocaleString()}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
@@ -477,7 +556,7 @@ export default function MessComplaints() {
               </div>
               {selectedComplaint.resolved_at && (
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="font-medium">Resolved on:</p>
+                  <p className="font-medium">Resolved On:</p>
                   <p>{new Date(selectedComplaint.resolved_at).toLocaleString()}</p>
                 </div>
               )}
@@ -507,14 +586,12 @@ export default function MessComplaints() {
             <div className="flex gap-4 justify-end">
               <button
                 onClick={() => handleConfirmDialog("No")}
-                className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all font-medium"
-              >
+                className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all font-medium">
                 Cancel
               </button>
               <button
                 onClick={() => handleConfirmDialog("Yes")}
-                className="px-5 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-medium"
-              >
+                className="px-5 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-medium">
                 Confirm
               </button>
             </div>

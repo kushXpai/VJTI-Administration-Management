@@ -1,16 +1,18 @@
-// app/Admin/GrievancesManagement/HostelComplaints
+// app/Admin/GrievancesManagement/HostelComplaints/page.tsx
 
 "use client";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabase/supabaseClient";
 import Image from 'next/image';
+import jsPDF from 'jspdf';
 
 // Define a type for the grievance object
 interface Grievance {
   id: string;
   issue_text: string;
   student_id: string;
+  student_name: string;
   created_at: string;
   status: "Pending" | "In Progress" | "Resolved" | "Rejected";
   is_opened: boolean;
@@ -34,12 +36,23 @@ export default function HostelComplaints() {
   const fetchGrievances = async () => {
     setLoading(true);
     try {
-      // Make sure we're using the correct table and query
-      console.log("Fetching grievances...");
+      console.log("Fetching grievances with student names...");
       
       const { data, error } = await supabase
         .from("grievances")
-        .select("*")
+        .select(`
+          id,
+          issue_text,
+          student_id,
+          created_at,
+          status,
+          is_opened,
+          category,
+          image_url,
+          resolved_at,
+          remark,
+          profiles!grievances_student_id_fkey(name)
+        `)
         .eq("category", "Hostel")
         .order("created_at", { ascending: false });
         
@@ -48,15 +61,91 @@ export default function HostelComplaints() {
         throw error;
       }
       
-      console.log("Grievances fetched successfully:", data);
-      setGrievances(data || []);
-    } catch (error) {
-      console.error("Error fetching grievances:", error);
-      alert("Failed to fetch grievances. Please refresh the page.");
+     const formattedData: Grievance[] = data.map((item: any) => ({
+        id: item.id,
+        issue_text: item.issue_text,
+        student_id: item.student_id,
+        student_name: item.profiles?.name || "Unknown",
+        created_at: item.created_at,
+        status: item.status,
+        is_opened: item.is_opened,
+        category: item.category,
+        image_url: item.image_url,
+        resolved_at: item.resolved_at,
+        remark: item.remark,
+      }));
+      
+      console.log("Grievances fetched successfully:", formattedData);
+      setGrievances(formattedData);
+    } catch (error: any) {
+      console.error("Error fetching grievances:", error.message, error.details);
+      alert("Failed to fetch grievances. Please ensure the database schema is correct and try again.");
     } finally {
       setLoading(false);
     }
   };
+
+
+   const generatePDF = () => {
+       const doc = new jsPDF();
+       const inProgressComplaints = grievances.filter(g => g.status === "In Progress");
+       
+       const logo = "/images/vjti_logo.png";
+       const logoWidth = 30;
+       const logoHeight = 33;
+       const pageWidth = doc.internal.pageSize.getWidth();
+   
+       doc.addImage(logo, 'PNG', 15, 5, logoWidth, logoHeight);
+   
+       doc.setFontSize(16);
+       const title = "Hostel Complaints";
+       const titleWidth = doc.getTextWidth(title);
+       doc.text(title, (pageWidth - titleWidth) / 2, 25);
+   
+       doc.setFontSize(12);
+       doc.text("Student ID", 20, 45);
+       doc.text("Student Name", 50, 45);
+       doc.text("Issue", 90, 45);
+       doc.text("Submitted On", 160, 45);
+       
+       doc.setLineWidth(0.5);
+       doc.line(20, 47, 190, 47);
+       
+       let y = 55;
+       inProgressComplaints.forEach((complaint, index) => {
+         const studentIdLines = doc.splitTextToSize(complaint.student_id, 25);
+         const studentNameLines = doc.splitTextToSize(complaint.student_name, 35);
+         const issueLines = doc.splitTextToSize(complaint.issue_text, 65);
+         const dateLines = doc.splitTextToSize(new Date(complaint.created_at).toLocaleDateString(), 30);
+         
+         doc.text(studentIdLines, 20, y);
+         doc.text(studentNameLines, 50, y);
+         doc.text(issueLines, 90, y);
+         doc.text(dateLines, 160, y);
+         
+         const rowHeight = Math.max(studentIdLines.length, studentNameLines.length, issueLines.length, dateLines.length) * 7 + 5;
+         y += rowHeight;
+         
+         if (y > 270) {
+           doc.addPage();
+           doc.addImage(logo, 'PNG', 15, 5, logoWidth, logoHeight);
+           doc.setFontSize(16);
+           doc.text(title, (pageWidth - titleWidth) / 2, 25);
+           doc.setFontSize(12);
+           doc.text("Student ID", 20, 45);
+           doc.text("Student Name", 50, 45);
+           doc.text("Issue", 90, 45);
+           doc.text("Submitted On", 160, 45);
+           doc.line(20, 47, 190, 45);
+           y = 55;
+         }
+       });
+       
+       const currentDate = new Date().toISOString().slice(0, 10);
+       const filename = `hostel_complaints_${currentDate}.pdf`;
+       
+       doc.save(filename);
+     };
 
   const updateStatus = async (id: string, newStatus: string, remark?: string) => {
     setLoading(true);
@@ -80,7 +169,6 @@ export default function HostelComplaints() {
         updates.remark = null;
       }
 
-      // Ensure we're using the correct table name and proper database connection
       const { error } = await supabase
         .from("grievances")
         .update(updates)
@@ -91,7 +179,6 @@ export default function HostelComplaints() {
         throw error;
       }
       
-      // Verify the update by fetching the updated record
       const { data: updatedData, error: fetchError } = await supabase
         .from("grievances")
         .select("*")
@@ -101,22 +188,18 @@ export default function HostelComplaints() {
       if (fetchError) {
         console.error("Error fetching updated grievance:", fetchError);
       } else {
-        console.log("Status updated successfully, verified data:", updatedData);
+        console.log("Updated successfully, verified data:", updatedData);
       }
       
-      // Refresh the entire grievances list
       await fetchGrievances();
       
-      // If we're viewing the updated complaint, update the selected complaint as well
       if (selectedComplaint && selectedComplaint.id === id) {
-        // Get the fresh data from the updated grievances list
         const updatedGrievance = grievances.find(g => g.id === id);
         if (updatedGrievance) {
           setSelectedComplaint(updatedGrievance);
         }
       }
 
-      // Clear UI states
       setShowRejectBox(false);
       setRejectRemark("");
       
@@ -130,10 +213,8 @@ export default function HostelComplaints() {
 
   const markAsOpened = async (id: string) => {
     try {
-      console.log("Marking grievance as opened:", id);
+      console.log("Marking as opened:", id);
       
-      // Update in the database
-        
       const { error } = await supabase
         .from('grievances')
         .update({ is_opened: true })
@@ -146,7 +227,6 @@ export default function HostelComplaints() {
       
       console.log("Successfully marked as opened in database");
       
-      // Update the local state immediately
       setGrievances(prevGrievances => 
         prevGrievances.map(g => 
           g.id === id ? { ...g, is_opened: true } : g
@@ -160,16 +240,13 @@ export default function HostelComplaints() {
   };
 
   useEffect(() => {
-    // Check if Supabase client is properly initialized
     if (!supabase) {
       console.error("Supabase client is not initialized");
       return;
     }
     
-    // Fetch initial data
     fetchGrievances();
     
-    // Setup real-time subscription to grievances table
     const subscription = supabase
       .channel('grievances-changes')
       .on('postgres_changes', 
@@ -181,13 +258,11 @@ export default function HostelComplaints() {
         }, 
         (payload) => {
           console.log('Change received!', payload);
-          // Refresh data when there's a change
           fetchGrievances();
         }
       )
       .subscribe();
       
-    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
     };
@@ -235,7 +310,6 @@ export default function HostelComplaints() {
           try {
             await updateStatus(selectedComplaint.id, selectedStatusForUpdate);
             
-            // Verify the update was successful
             const { data, error } = await supabase
               .from("grievances")
               .select("*")
@@ -276,32 +350,30 @@ export default function HostelComplaints() {
     }
     if (selectedComplaint) {
       try {
-        await updateStatus(selectedComplaint.id, "Rejected", rejectRemark);
-        
-        // Double-check if the update was successful
-        const { data, error } = await supabase
-          .from("grievances")
-          .select("*")
-          .eq("id", selectedComplaint.id)
-          .single();
-          
-        if (error) {
-          console.error("Error verifying rejection update:", error);
-          alert("There might have been an issue with the update. Please check the status.");
-        } else if (data.status !== "Rejected") {
-          console.error("Database status not updated to Rejected", data);
-          alert("The database update may have failed. Please try again.");
-        } else {
-          console.log("Rejection successful and verified:", data);
-          alert("Complaint rejected successfully.");
+        await updateStatus(selectedComplaint.id, "Rejected");
+          const { data, error } = await supabase
+            .from("grievances")
+            .select("*")
+            .eq("id", selectedComplaint.id)
+            .single();
+            
+          if (error) {
+            console.error("Error verifying status:", error);
+            alert("There was an issue with updating the status. Please check the status.");
+          } else if (data.status !== "Rejected") {
+            console.error("Database update not completed", data);
+            alert("The database update may have failed. Please try again.");
+          } else {
+            console.log("Status update verified:", data);
+            alert("Complaint rejected successfully.");
+          }
+        } catch (error) {
+          console.error("Error updating:", error);
+          alert("Failed to reject complaint. Please try again.");
         }
-      } catch (error) {
-        console.error("Error in rejection process:", error);
-        alert("Failed to reject complaint. Please try again.");
       }
     }
-  };
-
+    
   const renderStatusButtons = () => {
     if (!selectedComplaint) return null;
     
@@ -329,7 +401,7 @@ export default function HostelComplaints() {
         }}
         className={`px-4 py-2 ${
           status === "In Progress" ? "bg-blue-500" :
-          status === "Resolved" ? "bg-green-500" :
+          status === "Resolved" ? "bg-green-600" :
           status === "Pending" ? "bg-yellow-500" :
           "bg-red-500"
         } text-white rounded-lg hover:opacity-90 transition-all transform hover:scale-105 shadow-md font-medium`}
@@ -350,19 +422,17 @@ export default function HostelComplaints() {
   };
 
   const handleComplaintClick = async (grievance: Grievance) => {
-    // First mark as opened
     if (!grievance.is_opened) {
       await markAsOpened(grievance.id);
     }
     
-    // Then set as selected complaint
     setSelectedComplaint(grievance);
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center py-10 px-4 bg-gray-50">
       <div className="w-full max-w-5xl bg-white rounded-xl shadow-xl p-8 border border-gray-200">
-        <h1 className="text-3xl font-bold text-center mb-8" style={{ color: colors.primary }}>
+        <h1 className="text-3 font-bold text-center mb-8" style={{ color: colors.primary }}>
           Manage Hostel Grievances
         </h1>
 
@@ -383,6 +453,12 @@ export default function HostelComplaints() {
               <option value="Resolved">Resolved</option>
               <option value="Rejected">Rejected</option>
             </select>
+            <button
+              onClick={generatePDF}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all font-medium"
+            >
+              Generate PDF
+            </button>
           </div>
         </div>
 
@@ -409,7 +485,7 @@ export default function HostelComplaints() {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
-                      <p className="font-medium text-lg truncate max-w-lg">
+                      <p className="font-medium text-lg truncate max-w-500">
                         {g.issue_text.length > 60 ? `${g.issue_text.slice(0, 60)}...` : g.issue_text}
                       </p>
                       {!g.is_opened && (
@@ -419,7 +495,7 @@ export default function HostelComplaints() {
                       )}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
-                      Student ID: {g.student_id} • Submitted: {new Date(g.created_at).toLocaleDateString()}
+                      Student: {g.student_name} (ID: {g.student_id}) • Submitted: {new Date(g.created_at).toLocaleDateString()}
                     </div>
                   </div>
                   <span
@@ -460,13 +536,17 @@ export default function HostelComplaints() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+             <div className="grid grid-cols-2 gap-4 text-sm mb-6">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium">Student Name:</p>
+                <p>{selectedComplaint.student_name}</p>
+              </div>
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium">Student ID:</p>
                 <p>{selectedComplaint.student_id}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">Submitted on:</p>
+                <p className="font-medium">Submitted On:</p>
                 <p>{new Date(selectedComplaint.created_at).toLocaleString()}</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg">
@@ -477,7 +557,7 @@ export default function HostelComplaints() {
               </div>
               {selectedComplaint.resolved_at && (
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="font-medium">Resolved on:</p>
+                  <p className="font-medium">Resolved On:</p>
                   <p>{new Date(selectedComplaint.resolved_at).toLocaleString()}</p>
                 </div>
               )}
@@ -524,14 +604,14 @@ export default function HostelComplaints() {
 
       {showRejectBox && (
         <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full shadow-xl">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <h3 className="text-xl font-bold mb-4" style={{ color: colors.primary }}>
               Enter Rejection Reason
             </h3>
             <textarea
               className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
               rows={4}
-              placeholder="Please provide a detailed reason for rejection..."
+              placeholder="Please provide a reason for rejection..."
               value={rejectRemark}
               onChange={(e) => setRejectRemark(e.target.value)}
             ></textarea>
