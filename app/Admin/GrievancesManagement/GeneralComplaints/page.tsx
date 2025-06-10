@@ -111,7 +111,7 @@ export default function GeneralComplaints() {
     doc.line(20, 47, 190, 47);
     
     let y = 55;
-    inProgressComplaints.forEach((complaint, index) => {
+    inProgressComplaints.forEach((complaint) => {
       const studentIdLines = doc.splitTextToSize(complaint.student_id, 25);
       const studentNameLines = doc.splitTextToSize(complaint.student_name, 35);
       const issueLines = doc.splitTextToSize(complaint.issue_text, 65);
