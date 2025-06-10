@@ -89,7 +89,7 @@ export default function MessComplaints() {
     const doc = new jsPDF();
     const inProgressComplaints = grievances.filter(g => g.status === "In Progress");
     
-    const logo = "/images/vjti_logo.png";
+    const logo = "/images/vjti_logo1.png";
     const logoWidth = 30;
     const logoHeight = 33;
     const pageWidth = doc.internal.pageSize.getWidth();
