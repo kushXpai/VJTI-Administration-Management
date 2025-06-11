@@ -28,6 +28,7 @@ interface DashboardProps {
 
 export default function Dashboard({ user }: DashboardProps) {
   const [allotmentDetails, setAllotmentDetails] = useState<AllotmentDetails | null>(null);
+  const [messBalance, setMessBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [grievanceStats, setGrievanceStats] = useState<{ inProgress: number; resolved: number; rejected: number }>({ inProgress: 0, resolved: 0, rejected: 0 });
@@ -42,7 +43,7 @@ export default function Dashboard({ user }: DashboardProps) {
       try {
         const { data, error } = await supabase
           .from('hostel_applications')
-          .select('allotment_status, building_name, room_number')
+          .select('allotment_status, building_name, room_number, current_balance')
           .eq('id', user.id)
           .single();
 
@@ -51,6 +52,8 @@ export default function Dashboard({ user }: DashboardProps) {
           setError(`Failed to fetch allotment details: ${error.message}`);
           return;
         }
+
+        setMessBalance(data?.current_balance ?? null);
 
         if (data && data.allotment_status === 'Accepted') {
           setAllotmentDetails({
@@ -132,7 +135,9 @@ export default function Dashboard({ user }: DashboardProps) {
             <h3 className="font-semibold text-gray-700">Mess Balance</h3>
             <FiCoffee className="text-red-800" size={18} />
           </div>
-          <p className="text-3xl font-bold text-gray-800 mb-1">₹3,240</p>
+          <p className="text-3xl font-bold text-gray-800 mb-1">
+            {messBalance !== null ? `₹${messBalance.toLocaleString()}` : 'N/A'}
+          </p> 
           <p className="text-sm text-gray-500">Valid until June 30, 2025</p>
         </div>
 
