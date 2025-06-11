@@ -511,66 +511,80 @@ export default function GeneralComplaints() {
       </div>
 
       {selectedComplaint && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white p-8 rounded-lg max-w-2xl w-full shadow-2xl relative border">
-            <button
-              onClick={() => setSelectedComplaint(null)}
-              className="absolute top-4 right-4 w-8 h-8 bg-red-500 text-white flex items-center justify-center rounded-full transform transition-all hover:bg-red-600 hover:scale-105 active:scale-95"
-            >
-              ✕
-            </button>
-
-            <h2 className="text-2xl font-bold mb-6" style={{ color: colors.primary }}>
-              Complaint Details
-            </h2>
-
-            <div className="p-4 bg-gray-50 rounded-lg border mb-4">
-              <p className="font-medium mb-2">Issue:</p>
-              <p className="text-gray-700">{selectedComplaint.issue_text}</p>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full shadow-2xl relative border max-h-[90vh] flex flex-col">
+            {/* Fixed Header */}
+            <div className="flex justify-between items-center p-6 border-b bg-white rounded-t-lg">
+              <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>
+                Complaint Details
+              </h2>
+              <button
+                onClick={() => setSelectedComplaint(null)}
+                className="w-8 h-8 bg-red-500 text-white flex items-center justify-center rounded-full transform transition-all hover:bg-red-600 hover:scale-105 active:scale-95"
+              >
+                ✕
+              </button>
             </div>
 
-            {selectedComplaint.image_url && (
-              <div className="mb-6">
-                <p className="font-medium mb-2">Attached Image:</p>
-                <Image src={selectedComplaint.image_url} alt="description" width={500} height={300} />
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="p-4 bg-gray-50 rounded-lg border">
+                <p className="font-medium mb-2">Issue:</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{selectedComplaint.issue_text}</p>
               </div>
-            )}
 
-            <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">Student Name:</p>
-                <p>{selectedComplaint.student_name}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">Student ID:</p>
-                <p>{selectedComplaint.student_id}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">Submitted on:</p>
-                <p>{new Date(selectedComplaint.created_at).toLocaleString()}</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">Current Status:</p>
-                <span className={`inline-block px-2 py-1 mt-1 rounded-md text-sm font-medium ${getStatusColor(selectedComplaint.status)}`}>
-                  {selectedComplaint.status}
-                </span>
-              </div>
-              {selectedComplaint.resolved_at && (
+              {selectedComplaint.image_url && (
+                <div>
+                  <p className="font-medium mb-2">Attached Image:</p>
+                  <div className="flex justify-center">
+                    <Image 
+                      src={selectedComplaint.image_url} 
+                      alt="Complaint attachment" 
+                      width={500} 
+                      height={300} 
+                      className="rounded-lg border shadow-sm max-w-full h-auto"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="font-medium">Resolved on:</p>
-                  <p>{new Date(selectedComplaint.resolved_at).toLocaleString()}</p>
+                  <p className="font-medium">Student Name:</p>
+                  <p>{selectedComplaint.student_name}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium">Student ID:</p>
+                  <p>{selectedComplaint.student_id}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium">Submitted on:</p>
+                  <p>{new Date(selectedComplaint.created_at).toLocaleString()}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium">Current Status:</p>
+                  <span className={`inline-block px-2 py-1 mt-1 rounded-md text-sm font-medium ${getStatusColor(selectedComplaint.status)}`}>
+                    {selectedComplaint.status}
+                  </span>
+                </div>
+                {selectedComplaint.resolved_at && (
+                  <div className="p-3 bg-gray-50 rounded-lg md:col-span-2">
+                    <p className="font-medium">Resolved on:</p>
+                    <p>{new Date(selectedComplaint.resolved_at).toLocaleString()}</p>
+                  </div>
+                )}
+              </div>
+
+              {selectedComplaint.remark && (
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="font-medium mb-1 text-red-800">Rejection Reason:</p>
+                  <p className="text-red-700 whitespace-pre-wrap">{selectedComplaint.remark}</p>
                 </div>
               )}
             </div>
-
-            {selectedComplaint.remark && (
-              <div className="p-4 bg-red-50 rounded-lg border border-red-200 mb-6">
-                <p className="font-medium mb-1 text-red-800">Rejection Reason:</p>
-                <p className="text-red-700">{selectedComplaint.remark}</p>
-              </div>
-            )}
             
-            <div className="mt-6 border-t pt-6">
+            {/* Fixed Footer */}
+            <div className="border-t bg-white p-6 rounded-b-lg">
               <h3 className="text-lg font-bold mb-4">Update Complaint Status</h3>
               <div className="flex flex-wrap gap-3">
                 {renderStatusButtons()}
