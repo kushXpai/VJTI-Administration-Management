@@ -1,4 +1,5 @@
 // app/Authentication/SignUp/page.tsx
+
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -73,21 +74,35 @@ export default function SignUp() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div 
+      className="flex items-center justify-center min-h-screen bg-gray-100 relative"
+      style={{
+        backgroundImage: 'url(/images/VJTI_Background.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+
+      <div 
+        className="absolute inset-0 bg-black"
+        style={{ opacity: 0.7 }}
+      />
+      
       <div
-        className="w-full max-w-md rounded-xl shadow-2xl overflow-hidden"
+        className="w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative z-10"
         style={{
           backgroundColor: colors.surfaceLight,
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
         }}
       >
-        <div className="px-8 py-6" style={{ backgroundColor: colors.primary }}>
+        <div className="px-10 py-8" style={{ backgroundColor: colors.primary }}>
           <h1 className="text-3xl font-bold text-center" style={{ color: colors.textInverse }}>
             Sign Up
           </h1>
         </div>
 
-        <div className="px-8 py-10">
+        <div className="px-10 py-12">
           {error && <div className="p-3 mb-6 text-sm text-red-700 bg-red-100 rounded-lg">{error}</div>}
 
           <form onSubmit={handleSignUp} className="space-y-8">
