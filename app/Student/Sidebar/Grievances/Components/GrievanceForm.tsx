@@ -16,7 +16,7 @@ interface GrievanceFormProps {
     onGrievanceSubmitted: () => void;
 }
 
-type CategoryType = 'Hostel' | 'Mess' | 'General' | 'Room Change';
+type CategoryType = 'Hostel' | 'Mess' | 'General';
 
 export default function GrievanceForm({ user, onGrievanceSubmitted }: GrievanceFormProps) {
     const [category, setCategory] = useState<CategoryType>('General');
@@ -160,7 +160,6 @@ export default function GrievanceForm({ user, onGrievanceSubmitted }: GrievanceF
                         <option value="General">General</option>
                         <option value="Hostel">Hostel</option>
                         <option value="Mess">Mess</option>
-                        <option value="Room Change">Room Change</option>
                     </select>
                 </div>
 
@@ -172,6 +171,7 @@ export default function GrievanceForm({ user, onGrievanceSubmitted }: GrievanceF
                         id="issueText"
                         value={issueText}
                         onChange={(e) => setIssueText(e.target.value)}
+                        placeholder="Please describe your issue in detail. If it's related to a specific room, please mention your room number (e.g., T204)..."
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
                         rows={5}
                         disabled={isSubmitting}

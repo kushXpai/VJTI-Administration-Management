@@ -424,14 +424,14 @@ export default function ProfileContent({ user, hostelData }: ProfileProps) {
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-6 flex justify-end space-x-4">
+      {/* <div className="mt-6 flex justify-end space-x-4">
         <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
           Download Profile
         </button>
         <button className="px-6 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors">
           Edit Profile
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }
