@@ -5,29 +5,30 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/supabase/supabaseClient';
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Phone } from 'lucide-react';
 
 export default function SignUp() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const colors = {
-    primary: '#800000',        // Maroon
-    primaryDark: '#5A0000',    // Darker Maroon
-    primaryLight: '#FFE6E6',   // Light Maroon
-    secondary: '#800000',      // Maroon
-    surfaceLight: '#FFFFFF',   // White
-    surfaceMedium: '#F9F9F9',  // Light Gray
-    surfaceDark: '#E0E0E0',    // Gray
-    textPrimary: '#000000',    // Black
-    textSecondary: '#333333',  // Dark Gray
-    textTertiary: '#777777',   // Medium Gray
-    textInverse: '#FFFFFF',    // White
+    primary: '#800000',
+    primaryDark: '#5A0000',
+    primaryLight: '#FFE6E6',
+    secondary: '#800000',
+    surfaceLight: '#FFFFFF',
+    surfaceMedium: '#F9F9F9',
+    surfaceDark: '#E0E0E0',
+    textPrimary: '#000000',
+    textSecondary: '#333333',
+    textTertiary: '#777777',
+    textInverse: '#FFFFFF',
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -37,23 +38,25 @@ export default function SignUp() {
 
     try {
       const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
+        .from('profiles_db')
+        .select('student_id')
         .eq('email', email)
         .single();
 
-      if (existingUser) {
-        throw new Error('Email already in use');
-      }
+      if (existingUser) throw new Error('Email already in use');
 
       const { error: insertError } = await supabase
-        .from('profiles')
+        .from('profiles_db')
         .insert([
           {
             name,
             email,
             password,
-            role: 'student'
+            mobile_number: Number(mobileNumber),
+            role: 'Student',
+            student_roll_number: null,
+            student_email: null,
+            worker_type: null
           }
         ])
         .select();
@@ -61,20 +64,16 @@ export default function SignUp() {
       if (insertError) throw insertError;
 
       router.push('/');
-
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to sign up');
-      }
+      if (err instanceof Error) setError(err.message);
+      else setError('Failed to sign up');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div 
+    <div
       className="flex items-center justify-center min-h-screen bg-gray-100 relative"
       style={{
         backgroundImage: 'url(/images/VJTI_Background.jpg)',
@@ -83,29 +82,21 @@ export default function SignUp() {
         backgroundRepeat: 'no-repeat'
       }}
     >
-
-      <div 
-        className="absolute inset-0 bg-black"
-        style={{ opacity: 0.7 }}
-      />
+      <div className="absolute inset-0 bg-black" style={{ opacity: 0.7 }} />
       
       <div
         className="w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative z-10"
-        style={{
-          backgroundColor: colors.surfaceLight,
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-        }}
+        style={{ backgroundColor: colors.surfaceLight }}
       >
         <div className="px-10 py-8" style={{ backgroundColor: colors.primary }}>
-          <h1 className="text-3xl font-bold text-center" style={{ color: colors.textInverse }}>
-            Sign Up
-          </h1>
+          <h1 className="text-3xl font-bold text-center" style={{ color: colors.textInverse }}>Sign Up</h1>
         </div>
 
         <div className="px-10 py-12">
           {error && <div className="p-3 mb-6 text-sm text-red-700 bg-red-100 rounded-lg">{error}</div>}
 
           <form onSubmit={handleSignUp} className="space-y-8">
+            {/* Name Field */}
             <div className="space-y-2">
               <label htmlFor="name" className="block text-sm font-medium" style={{ color: colors.textPrimary }}>
                 Full Name
@@ -120,11 +111,6 @@ export default function SignUp() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="block w-full pl-12 pr-4 py-3 rounded-lg shadow-sm text-base"
-                  style={{
-                    borderColor: colors.surfaceDark,
-                    color: colors.textPrimary,
-                    backgroundColor: colors.surfaceLight
-                  }}
                   placeholder="Enter your full name"
                   required
                   disabled={loading}
@@ -132,6 +118,7 @@ export default function SignUp() {
               </div>
             </div>
 
+            {/* Email Field */}
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium" style={{ color: colors.textPrimary }}>
                 Email Address
@@ -146,11 +133,6 @@ export default function SignUp() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-12 pr-4 py-3 rounded-lg shadow-sm text-base"
-                  style={{
-                    borderColor: colors.surfaceDark,
-                    color: colors.textPrimary,
-                    backgroundColor: colors.surfaceLight
-                  }}
                   placeholder="Enter your email address"
                   required
                   disabled={loading}
@@ -158,6 +140,31 @@ export default function SignUp() {
               </div>
             </div>
 
+            {/* Mobile Number Field */}
+            <div className="space-y-2">
+              <label htmlFor="mobile" className="block text-sm font-medium" style={{ color: colors.textPrimary }}>
+                Mobile Number
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5" style={{ color: colors.textTertiary }} />
+                </div>
+                <input
+                  id="mobile"
+                  type="tel"
+                  value={mobileNumber}
+                  onChange={(e) => setMobileNumber(e.target.value)}
+                  pattern="[0-9]{10}"
+                  maxLength={10}
+                  className="block w-full pl-12 pr-4 py-3 rounded-lg shadow-sm text-base"
+                  placeholder="Enter 10-digit mobile number"
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium" style={{ color: colors.textPrimary }}>
                 Password
@@ -172,11 +179,6 @@ export default function SignUp() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-12 pr-12 py-3 rounded-lg shadow-sm text-base"
-                  style={{
-                    borderColor: colors.surfaceDark,
-                    color: colors.textPrimary,
-                    backgroundColor: colors.surfaceLight
-                  }}
                   placeholder="Create a password"
                   required
                   disabled={loading}
@@ -196,6 +198,7 @@ export default function SignUp() {
               </div>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               className="w-full flex justify-center py-3 px-4 rounded-lg shadow-lg text-base font-medium transition-all duration-200 hover:scale-[1.02]"
@@ -217,6 +220,7 @@ export default function SignUp() {
             </button>
           </form>
 
+          {/* Sign In Link */}
           <div className="mt-8 text-center">
             <span className="text-base" style={{ color: colors.textSecondary }}>
               Already have an account?{" "}
