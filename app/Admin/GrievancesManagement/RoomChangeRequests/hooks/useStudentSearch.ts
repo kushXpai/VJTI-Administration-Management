@@ -48,7 +48,7 @@ const useStudentSearch = () => {
       console.error(`Failed to update occupants for ${buildingName}-${roomNumber}:`, err.message);
       throw err;
     }
-  }, [ supabase ]);
+  }, []);
 
   const searchStudents = useCallback(async (term: string) => {
     setLoading(true);

@@ -157,7 +157,7 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
       const hostelId = generateUUID();
 
       // First, insert the hostel record with explicit UUID
-      const { data: hostelData, error: hostelError } = await supabase
+      const { error: hostelError } = await supabase
         .from('hostel_db')
         .insert({
           hostel_id: hostelId, // Explicitly provide the UUID
