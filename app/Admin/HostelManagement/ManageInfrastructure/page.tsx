@@ -15,11 +15,14 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface Building {
+  hostel_id: string;
   name: string;
   type: "Girls" | "Boys";
   prefix: string;
   floors: number[];
   roomCount: number;
+  floor_count: number;
+  hostel_fees: number;
 }
 
 export default function ManageInfrastructure() {
@@ -31,46 +34,46 @@ export default function ManageInfrastructure() {
     type: "success" | "error" | "";
   }>({ text: "", type: "" });
 
-  // Fetch all buildings data from Supabase
+  // Fetch all buildings (hostels) data from Supabase
   const fetchBuildings = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("rooms")
+      // First, get all hostels
+      const { data: hostels, error: hostelsError } = await supabase
+        .from("hostel_db")
         .select("*")
-        .order("building_name", { ascending: true });
+        .order("name", { ascending: true });
 
-      if (error) throw error;
+      if (hostelsError) throw hostelsError;
 
-      // Process data to group by buildings and floors
-      const buildingsMap = new Map<string, Building>();
+      // Then get all rooms to calculate floors and room counts
+      const { data: rooms, error: roomsError } = await supabase
+        .from("room_db")
+        .select("hostel_id, floor");
 
-      data?.forEach((room) => {
-        const buildingName = room.building_name;
+      if (roomsError) throw roomsError;
 
-        if (!buildingsMap.has(buildingName)) {
-          buildingsMap.set(buildingName, {
-            name: buildingName,
-            type: room.type,
-            prefix: room.room_number.charAt(0),
-            floors: [],
-            roomCount: 0,
-          });
-        }
+      // Process data to create buildings array
+      const buildingsData: Building[] = hostels?.map((hostel) => {
+        // Filter rooms for this hostel
+        const hostelRooms = rooms?.filter(room => room.hostel_id === hostel.hostel_id) || [];
+        
+        // Get unique floors for this hostel
+        const floors = [...new Set(hostelRooms.map(room => room.floor))].sort((a, b) => a - b);
+        
+        return {
+          hostel_id: hostel.hostel_id,
+          name: hostel.name,
+          type: hostel.type,
+          prefix: hostel.prefix,
+          floors: floors,
+          roomCount: hostelRooms.length,
+          floor_count: hostel.floor_count,
+          hostel_fees: hostel.hostel_fees,
+        };
+      }) || [];
 
-        const building = buildingsMap.get(buildingName)!;
-
-        // Add floor if not already added
-        if (!building.floors.includes(room.floor)) {
-          building.floors.push(room.floor);
-          building.floors.sort((a, b) => a - b);
-        }
-
-        // Increment room count
-        building.roomCount++;
-      });
-
-      setBuildings(Array.from(buildingsMap.values()));
+      setBuildings(buildingsData);
     } catch (error) {
       console.error("Error fetching buildings:", error);
       setMessage({
@@ -144,7 +147,7 @@ export default function ManageInfrastructure() {
             supabase={supabase}
             onUpdate={fetchBuildings}
             setMessage={setMessage}
-            title="Buildings"
+            title="Hostels"
           />
         </div>
       </div>
