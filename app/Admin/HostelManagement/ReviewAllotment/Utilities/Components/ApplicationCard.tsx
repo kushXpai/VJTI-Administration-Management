@@ -1,18 +1,18 @@
-// app/Admin/HostelManagement/ReviewApplications/Utilities/Components/ApplicationCard.tsx
-
 import React, { useState } from 'react';
 import Image from 'next/image';
+import type { Application } from '../Types/Application';
 
-interface Application {
+/*interface Application {
   id: string;
   hostel_allotment_status: 'Accepted' | 'Pending' | 'Rejected';
   cet_application_id: string;
   cet_rank: string | number;
   aadhar_card_number: string;
-  photo_url: string;
-  hostel_fee_receipt_url:string;
-  hostel_fees_status:'Pending' | 'Paid';
-}
+  student_photo_url: string;
+  hostel_fees_url: string;
+  consent_form_url: string; // Make sure this exists
+  hostel_fees_status: 'Pending' | 'Paid';
+}*/
 
 interface ApplicationCardProps {
   application: Application;
@@ -40,19 +40,18 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
     setIsSubmitting(false);
   };
 
-
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
       <div className="bg-[#800000] text-white py-3 px-4">
         <h3 className="font-semibold text-lg">{studentName}</h3>
       </div>
-      
+
       <div className="p-4">
-        {application.photo_url && (
+        {application.student_photo_url && (
           <div className="mb-4 flex justify-center">
             <div className="relative w-24 h-24 overflow-hidden rounded-full border-2 border-gray-300">
               <Image 
-                src={application.photo_url} 
+                src={application.student_photo_url} 
                 alt={`${studentName}'s photo`}
                 fill
                 className="object-cover"
@@ -60,7 +59,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
             </div>
           </div>
         )}
-        
+
         <div className="space-y-2 mb-4">
           <InfoRow label="CET Application ID" value={application.cet_application_id} />
           <InfoRow label="CET Rank" value={application.cet_rank} />
@@ -68,10 +67,10 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
         </div>
 
         <div className="space-y-2 mb-4">
-          <DocumentLink label="Hostel Fee Receipt" url={application.hostel_fee_receipt_url} />
-
+          <DocumentLink label="Hostel Fee Receipt" url={application.hostel_fees_url??null} />
+          <DocumentLink label="Consent Form" url={application.consent_form_url??null} /> {/* NEW */}
         </div>
-        
+
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <label className="block text-sm font-medium text-gray-700">
@@ -86,7 +85,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
               <option value="Paid">Paid</option>
             </select>
           </div>
-          
+
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
@@ -102,7 +101,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
 
 const InfoRow: React.FC<{ label: string; value: string | number | null }> = ({ label, value }) => {
   if (!value) return null;
-  
+
   return (
     <div className="flex justify-between">
       <span className="text-sm font-medium text-gray-500">{label}:</span>
@@ -113,7 +112,7 @@ const InfoRow: React.FC<{ label: string; value: string | number | null }> = ({ l
 
 const DocumentLink: React.FC<{ label: string; url: string | null }> = ({ label, url }) => {
   if (!url) return null;
-  
+
   return (
     <div className="flex justify-between items-center">
       <span className="text-sm font-medium text-gray-500">{label}:</span>

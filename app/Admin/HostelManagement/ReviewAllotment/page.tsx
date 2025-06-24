@@ -10,14 +10,17 @@ import { courseMapping } from './Utilities/Constants/courseData';
 import LoadingSpinner from './Utilities/Components/LoadingSpinner';
 import Image from 'next/image';
 import type { Application } from './Utilities/Types/Application';
+import { useRouter } from 'next/navigation'; // ✅ routing
 
 interface Profile {
-  id: string;
+  student_id: string;
   name: string;
   email: string;
 }
 
 export default function ReviewAllotment() {
+  const router = useRouter(); // ✅ initialize router
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
@@ -32,16 +35,13 @@ export default function ReviewAllotment() {
     setIsLoading(true);
     try {
       const { data: applicationsData, error: applicationsError } = await supabase
-        .from('hostel_applications')
+        .from('hostel_applications_db')
         .select('*');
-
       if (applicationsError) throw applicationsError;
 
       const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .eq('role', 'student');
-
+        .from('profiles_db')
+        .select('student_id, name, email');
       if (profilesError) throw profilesError;
 
       setProfiles(profilesData || []);
@@ -66,17 +66,16 @@ export default function ReviewAllotment() {
   const updateApplicationStatus = async (id: string, status: 'Pending' | 'Paid') => {
     try {
       const { error } = await supabase
-        .from('hostel_applications')
-        .update({ hostel_fees_status: status })
+        .from('hostel_applications_db')
+        .update({ review_fee_status: status })
         .eq('id', id);
-
       if (error) throw error;
 
       setCourseGroups(prev => {
         const newGroups = { ...prev };
         Object.keys(newGroups).forEach(course => {
           newGroups[course] = newGroups[course].map(app =>
-            app.id === id ? { ...app, hostel_fees_status: status } : app
+            app.id === id ? { ...app, review_fee_status: status } : app
           );
         });
         return newGroups;
@@ -90,7 +89,7 @@ export default function ReviewAllotment() {
   };
 
   const getStudentName = (studentId: string): string => {
-    const profile = profiles.find((p: Profile) => p.id === studentId);
+    const profile = profiles.find(p => p.student_id === studentId);
     return profile?.name ?? 'Unknown Student';
   };
 
@@ -109,7 +108,7 @@ export default function ReviewAllotment() {
       entries = entries
         .map(([course, apps]): [string, Application[]] => [
           course,
-          apps.filter(app => app.hostel_fees_status === selectedStatus)
+          apps.filter(app => app.review_fee_status === selectedStatus)
         ])
         .filter(([, filteredApps]) => filteredApps.length > 0);
     }
@@ -117,9 +116,7 @@ export default function ReviewAllotment() {
     return entries;
   };
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -143,7 +140,7 @@ export default function ReviewAllotment() {
         </div>
 
         <div className="w-3/4 p-6">
-          <div className="mb-8">
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CourseFilter
               courses={Object.keys(courseGroups)}
               courseMapping={courseMapping}
@@ -152,6 +149,14 @@ export default function ReviewAllotment() {
               selectedStatus={selectedStatus}
               onStatusChange={setSelectedStatus}
             />
+
+            {/* ✅ Final Allotment Redirect Button */}
+            <button
+              onClick={() => router.push('/Admin/HostelManagement/ReviewAllotment/FinalAllotmentList')}
+              className="bg-[#800000] text-white px-4 py-2 rounded-md hover:bg-red-700 transition-all"
+            >
+              View Final Allotment List
+            </button>
           </div>
 
           {getApplicationsToDisplay().length === 0 ? (
@@ -166,7 +171,7 @@ export default function ReviewAllotment() {
                 </h2>
                 <ApplicationsList
                   applications={apps}
-                  getStudentName={getStudentName}
+                  getStudentName={(appId) => getStudentName(apps.find(a => a.id === appId)?.student_id ?? '')}
                   updateStatus={updateApplicationStatus}
                 />
               </div>
