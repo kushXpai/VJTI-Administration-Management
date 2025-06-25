@@ -225,7 +225,7 @@ export default function MeritListPage() {
         const { data: applications, error: fetchError } = await supabase
           .from('hostel_applications')
           .select('*')
-          .eq('hostel_application_status', 'Accepted')
+          .eq('hostel_applications_status', 'Accepted')
           .eq('course', dbCourse)
           .order('cet_rank', { ascending: true });
 
