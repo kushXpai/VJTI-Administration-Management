@@ -65,6 +65,7 @@ export default function StudentMessMenu() {
 
   const fetchMenuData = useCallback(async (studentId: string) => {
     try {
+      console.log(user);
       const { data: hostelApp, error: hostelAppErr } = await supabase
         .from('hostel_applications_db')
         .select('hostel_id')

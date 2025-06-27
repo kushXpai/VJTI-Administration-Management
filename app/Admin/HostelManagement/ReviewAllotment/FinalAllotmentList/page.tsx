@@ -28,7 +28,7 @@ export default function FinalAllotmentListPage() {
 
   useEffect(() => {
     filterList();
-  }, [selectedCourse, selectedGender, finalList]);
+  }, [selectedCourse, selectedGender, finalList, filteredList]);  
 
   const fetchFinalList = async () => {
     setIsLoading(true);

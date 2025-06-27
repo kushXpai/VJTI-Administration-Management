@@ -106,7 +106,7 @@ export default function HostelContent({ user }: HostelContentProps) {
     }
 
     checkExistingApplication();
-  }, [user]);
+  }, [user, isAllotmentAccepted]);
 
   if (isLoading || !user) return <div>Loading user data...</div>;
   if (error) return <div className="text-red-500 p-6">{error}</div>;

@@ -187,6 +187,7 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
   const [currentDate, setCurrentDate] = useState<string>('');
 
   const fetchGrievances = useCallback(async () => {
+    console.log("Current date is:", currentDate);
     if (!user?.id) {
       setIsLoading(false);
       return;
