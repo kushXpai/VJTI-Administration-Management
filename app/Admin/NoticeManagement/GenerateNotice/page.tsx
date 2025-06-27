@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Header from "@/app/Components/Header";
 import Footer from "@/app/Components/Footer";
 import { supabase } from "@/supabase/supabaseClient";
