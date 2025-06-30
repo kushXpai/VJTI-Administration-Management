@@ -29,7 +29,6 @@ const ManualAutoRoomAllocation: React.FC<ManualAutoRoomAllocationProps> = ({
   selectedStudentId,
   selectedRoomId,
   loading,
-  onSelectStudent,
   onSelectRoom,
   onAllocateManually,
   onAutoAllocate,
