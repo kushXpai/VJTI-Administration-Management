@@ -1,32 +1,46 @@
-// app/Admin/HostelManagement/RoomAllotment/Types/Type.ts
-export type HostelBlock = 'PG Block' | 'C Block' | 'D Block' | 'B Block';
-export type Degree =
-  | 'Bachelor of Technology (B.Tech)'
-  | 'Master of Technology (M.Tech)'
-  | 'Master of Computer Application (MCA)'
-  | 'Diploma';
-export type Course = string;
-export type Gender = 'Male' | 'Female';
-export type ApplicationStatus = 'Pending' | 'Accepted' | 'Rejected';
-
-export interface HostelApplication {
-  id: string;
+export interface Profile {
   name: string;
-  course: Course; // e.g., 'BTechComputerEngineering', 'MTechMechanicalEngineering', 'MCA', 'Diploma'
-  gender: Gender;
-  hostel_allotment_status: ApplicationStatus;
-  hostel_block?: string | null;
-  room_number?: string | null;
 }
 
+export interface StudentApplication {
+  id: string;
+  student_id: string;
+  hostel_applications_status: string;
+  provisional_status: string;
+  block_allotment_status: string;
+  room_id: string | null;
+  hostel_id: string | null;
+  hostel_fees: number | null;         // ✅ NEW
+  mess_id: string | null;             // ✅ NEW
+  mess_fees?: number | null;          // optional (used in auto allocation)
+  mess_payment_type?: string | null;  // optional (e.g. 'Full', 'Partial')
+  course: string;
+  gender: string;
+  profiles_db: Profile[];
+}
+
+
 export interface Room {
-  id: number;
-  building_name: HostelBlock;
-  type: 'Boys' | 'Girls';
-  floor: number;
-  room_number: string;
+  room_id: string;
+  hostel_id: string;
+  number: number;
   capacity: number;
-  vacant: number;
-  occupants: number;
-  occupants_list: string[];
+  vacancy: number;
+  occupancy: number;
+  occupant_ids: string[];
+  occupants: { student_id: string; name: string }[];
+}
+
+export interface Hostel {
+  hostel_id: string;
+  name: string;
+  type: string;
+  hostel_fees: number;
+  mess_id: string | null;
+}
+
+export interface Mess {
+  mess_id: string;
+  name: string;
+  mess_fees: number;
 }
