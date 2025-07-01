@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../../../../supabase/supabaseClient";
 import Image from "next/image";
 import LoadingSpinner from "../Utilities/Components/LoadingSpinner";
-import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface FinalAllotmentEntry {
   student_name: string;
@@ -14,6 +15,38 @@ interface FinalAllotmentEntry {
   hostel_name: string;
   room_number: number;
 }
+
+const courseCategoryMap: Record<string, string> = {
+  "Diploma in Civil Engineering": "Diploma",
+  "Diploma in Electrical Engineering": "Diploma",
+  "Diploma in Electronics Engineering": "Diploma",
+  "Diploma in Mechanical Engineering": "Diploma",
+  "Diploma in Textile Manufacturers": "Diploma",
+  "Diploma in Chemical Engineering": "Diploma",
+
+  "B.Tech Degree in Civil Engineering": "BTech",
+  "B.Tech Degree in Computer Engineering": "BTech",
+  "B.Tech Degree in Electrical Engineering": "BTech",
+  "B.Tech Degree in Electronics Engineering": "BTech",
+  "B.Tech Degree in Electronics & Telecommunication Engineering": "BTech",
+  "B.Tech Degree in Information Technology": "BTech",
+  "B.Tech Degree in Mechanical Engineering": "BTech",
+  "B.Tech Degree in Production Engineering": "BTech",
+  "B.Tech Degree in Textile Technology": "BTech",
+
+  "Master of Computer Application": "MCA",
+
+  "M.Tech Degree in Civil Engineering": "MTech",
+  "M.Tech Degree in Computer Engineering": "MTech",
+  "M.Tech Degree in Electrical Engineering": "MTech",
+  "M.Tech Degree in Internet of Things (IOT)": "MTech",
+  "M.Tech Degree in Electronics & Telecommunication Engineering": "MTech",
+  "M.Tech Degree in Mechanical Engineering": "MTech",
+  "M.Tech Degree in Production Engineering": "MTech",
+  "M.Tech Degree in Project Management": "MTech",
+  "M.Tech Degree in Technical Textile": "MTech",
+  "M.Tech Degree in Defence Technology": "MTech",
+};
 
 export default function FinalAllotmentListPage() {
   const [finalList, setFinalList] = useState<FinalAllotmentEntry[]>([]);
@@ -28,7 +61,7 @@ export default function FinalAllotmentListPage() {
 
   useEffect(() => {
     filterList();
-  }, [selectedCourse, selectedGender, finalList, filteredList]);  
+  }, [selectedCourse, selectedGender, finalList]);
 
   const fetchFinalList = async () => {
     setIsLoading(true);
@@ -63,7 +96,7 @@ export default function FinalAllotmentListPage() {
   const filterList = () => {
     let list = [...finalList];
     if (selectedCourse) {
-      list = list.filter(entry => entry.course === selectedCourse);
+      list = list.filter(entry => courseCategoryMap[entry.course] === selectedCourse);
     }
     if (selectedGender) {
       list = list.filter(entry => entry.gender === selectedGender);
@@ -71,26 +104,31 @@ export default function FinalAllotmentListPage() {
     setFilteredList(list);
   };
 
-  const exportToCSV = () => {
-    const header = ["Student Name", "Gender", "Course", "Hostel Name", "Room Number"];
-    const rows = filteredList.map(entry => [
-      entry.student_name,
-      entry.gender,
-      entry.course,
-      entry.hostel_name,
-      entry.room_number
-    ]);
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Final Allotment List", 14, 16);
 
-    const csvContent = [header, ...rows].map(row => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    autoTable(doc, {
+      head: [["Student Name", "Gender", "Course", "Hostel Name", "Room Number"]],
+      body: filteredList.map(entry => [
+        entry.student_name,
+        entry.gender,
+        entry.course,
+        entry.hostel_name,
+        entry.room_number.toString()
+      ]),
+      startY: 20,
+      theme: "striped",
+      styles: { fontSize: 10 },
+    });
 
-    const fileName = `FinalAllotmentList_${selectedCourse ?? "AllCourses"}_${selectedGender ?? "AllGenders"}.csv`;
-    saveAs(blob, fileName);
+    const fileName = `FinalAllotmentList_${selectedCourse ?? "AllCourses"}_${selectedGender ?? "AllGenders"}.pdf`;
+    doc.save(fileName);
   };
 
   if (isLoading) return <LoadingSpinner />;
 
-  const uniqueCourses = [...new Set(finalList.map(entry => entry.course))];
+  const courseOptions = ["Diploma", "BTech", "MTech", "MCA"];
   const uniqueGenders = [...new Set(finalList.map(entry => entry.gender))];
 
   return (
@@ -110,31 +148,22 @@ export default function FinalAllotmentListPage() {
       </header>
 
       <div className="w-1/4 p-4 flex gap-4 my-4">
-        <select
-          onChange={e => setSelectedCourse(e.target.value || null)}
-          className="p-2 border rounded"
-        >
+        <select onChange={e => setSelectedCourse(e.target.value || null)} className="p-2 border rounded">
           <option value="">All Courses</option>
-          {uniqueCourses.map(course => (
+          {courseOptions.map(course => (
             <option key={course} value={course}>{course}</option>
           ))}
         </select>
 
-        <select
-          onChange={e => setSelectedGender(e.target.value || null)}
-          className="p-2 border rounded"
-        >
+        <select onChange={e => setSelectedGender(e.target.value || null)} className="p-2 border rounded">
           <option value="">All Genders</option>
           {uniqueGenders.map(gender => (
             <option key={gender} value={gender}>{gender}</option>
           ))}
         </select>
 
-        <button
-          onClick={exportToCSV}
-          className="bg-[#800000] text-white px-4 py-2 rounded hover:bg-red-700"
-        >
-          Export CSV
+        <button onClick={exportToPDF} className="bg-[#800000] text-white px-4 py-2 rounded hover:bg-red-700">
+          Export PDF
         </button>
       </div>
 
