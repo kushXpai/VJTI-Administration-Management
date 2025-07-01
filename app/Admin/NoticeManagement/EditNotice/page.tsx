@@ -37,7 +37,10 @@ export default function GenerateNotice() {
       fromDate.setMonth(now.getMonth() - 3);
     }
 
-    let query = supabase.from("notices_db").select("*");
+    let query = supabase
+      .from("notices_db")
+      .select("*")
+      .order("updated_at", { ascending: false });
 
     if (fromDate) {
       query = query.gte("updated_at", fromDate.toISOString());

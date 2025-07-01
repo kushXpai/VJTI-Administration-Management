@@ -78,7 +78,7 @@ export default function StudentDashboard() {
       case "Hostel Allocation":
         return <HostelContent user={user!} />;
       case "Notices":
-        return <NoticeContent user={user!} />;
+        return <NoticeContent />;
       case "Grievances":
         return <GrievancesContent />;
       case "Mess Management":

@@ -9,13 +9,18 @@ export default function GenerateNotice() {
   const [title, setTitle] = useState<string>("");
   const [desc, setDesc] = useState<string>("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleNoticeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setSuccess(false);
 
     try {
       if (!pdfFile) {
         alert("Please upload a PDF");
+        setLoading(false);
         return;
       }
 
@@ -25,6 +30,7 @@ export default function GenerateNotice() {
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
+        setLoading(false);
         return;
       }
 
@@ -37,13 +43,16 @@ export default function GenerateNotice() {
       if (insertError) {
         console.error("Insert error:", insertError);
       } else {
-        alert("Notice uploaded successfully");
+        setSuccess(true);
         setTitle("");
         setDesc("");
         setPdfFile(null);
+        setTimeout(() => setSuccess(false), 3000);
       }
     } catch (err) {
       console.error("Unhandled error:", err); // ✅ This will catch unexpected issues
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,10 +124,38 @@ export default function GenerateNotice() {
 
         <button
           type="submit"
-          disabled={!title || !desc || !pdfFile}
-          className="w-full py-3 bg-red-700 text-white rounded-lg text-lg hover:bg-red-800 transition duration-300 hover: cursor-pointer disabled:cursor-not-allowed disabled:bg-red-300"
+          disabled={!title || !desc || !pdfFile || loading}
+          className={`w-full py-3 flex items-center justify-center gap-2 text-lg rounded-lg transition duration-300 ${
+            success
+              ? "bg-green-600 hover:bg-green-700 text-white"
+              : loading
+              ? "bg-red-300 text-white cursor-not-allowed"
+              : "bg-red-700 hover:bg-red-800 text-white"
+          }`}
         >
-          Submit
+          {loading && (
+            <svg
+              className="animate-spin h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              ></path>
+            </svg>
+          )}
+          {success ? "Success" : loading ? "Uploading..." : "Submit"}
         </button>
       </form>
 
