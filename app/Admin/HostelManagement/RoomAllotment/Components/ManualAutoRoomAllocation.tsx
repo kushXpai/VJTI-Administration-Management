@@ -1,8 +1,8 @@
+// ManualAutoRoomAllocation.tsx
 import { StudentApplication, Room, Hostel, Mess } from '../Types/Type';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/supabase/supabaseClient';
-import { getMessForHostel } from '../utils/autoAllocateRooms'; // ✅ Import this utility function
- 
+import { getMessForHostel, getValidRoomsForManual } from '../utils/autoAllocateRooms';
 
 interface ManualAutoRoomAllocationProps {
   students: StudentApplication[];
@@ -56,75 +56,78 @@ const ManualAutoRoomAllocation: React.FC<ManualAutoRoomAllocationProps> = ({
 
   const studentName = selectedStudent?.profiles_db?.[0]?.name || 'N/A';
 
+  const genderFilteredRooms = selectedStudent
+    ? getValidRoomsForManual(selectedStudent.gender, hostels, rooms)
+    : [];
+
   const availableRooms = selectedHostelId
-    ? rooms.filter((r) => r.hostel_id === selectedHostelId && r.vacancy > 0)
+    ? genderFilteredRooms.filter((r) => r.hostel_id === selectedHostelId)
     : [];
 
   const handleAllocateManually = async () => {
-  if (!selectedStudentId || !selectedRoomId) {
-    alert("Please select both student and room.");
-    return;
-  }
+    if (!selectedStudentId || !selectedRoomId) {
+      alert("Please select both student and room.");
+      return;
+    }
 
-  const student = students.find((s) => s.student_id === selectedStudentId);
-  const room = rooms.find((r) => r.room_id === selectedRoomId);
-  const hostel = hostels.find((h) => h.hostel_id === room?.hostel_id);
+    const student = students.find((s) => s.student_id === selectedStudentId);
+    const room = rooms.find((r) => r.room_id === selectedRoomId);
+    const hostel = hostels.find((h) => h.hostel_id === room?.hostel_id);
 
-  if (!student || !room || !hostel) {
-    alert("Invalid student, room, or hostel.");
-    return;
-  }
+    if (!student || !room || !hostel) {
+      alert("Invalid student, room, or hostel.");
+      return;
+    }
 
-  const messName = getMessForHostel(hostel.name, student.gender);
-  const mess = messes.find((m) => m.name === messName);
+    const messName = getMessForHostel(hostel.name, student.gender);
+    const mess = messes.find((m) => m.name === messName);
 
-  const { error: updateStudentError } = await supabase
-    .from('hostel_applications_db')
-    .update({
-      room_id: room.room_id,
-      hostel_id: hostel.hostel_id,
-      hostel_fees: hostel.hostel_fees,
-      mess_id: mess?.mess_id || null,
-      mess_fees: mess?.mess_fees || 0,
-      mess_payment_type: 'Full',
-      block_allotment_status: 'Allotted',
-    })
-    .eq('student_id', student.student_id);
+    const { error: updateStudentError } = await supabase
+      .from('hostel_applications_db')
+      .update({
+        room_id: room.room_id,
+        hostel_id: hostel.hostel_id,
+        hostel_fees: hostel.hostel_fees,
+        mess_id: mess?.mess_id || null,
+        mess_fees: mess?.mess_fees || 0,
+        mess_payment_type: 'Full',
+        block_allotment_status: 'Allotted',
+      })
+      .eq('student_id', student.student_id);
 
-  if (updateStudentError) {
-    console.error("Failed to update student:", updateStudentError);
-    alert("Student update failed!");
-    return;
-  }
+    if (updateStudentError) {
+      console.error("Failed to update student:", updateStudentError);
+      alert("Student update failed!");
+      return;
+    }
 
-  const { error: updateRoomError } = await supabase
-    .from('room_db')
-    .update({
-      occupant_ids: [...room.occupant_ids, student.student_id],
-      occupancy: room.occupancy + 1,
-    })
-    .eq('room_id', room.room_id);
+    const { error: updateRoomError } = await supabase
+      .from('room_db')
+      .update({
+        occupant_ids: [...room.occupant_ids, student.student_id],
+        occupancy: room.occupancy + 1,
+      })
+      .eq('room_id', room.room_id);
 
-  if (updateRoomError) {
-    console.error("Failed to update room:", updateRoomError);
-    alert("Room update failed!");
-    return;
-  }
+    if (updateRoomError) {
+      console.error("Failed to update room:", updateRoomError);
+      alert("Room update failed!");
+      return;
+    }
 
-  onAllocateManually(); // triggers refresh
-  setIsModalOpen(false);
-};
+    onAllocateManually();
+    setIsModalOpen(false);
+  };
 
   return (
     <div>
-     <button
-  onClick={onAutoAllocate}
-  className={`transition-transform transform hover:scale-105 hover:bg-[#a00000] active:scale-95 ${autoButtonClassName} mt-6 mb-6 px-6 py-3 rounded-lg shadow-md`}
-  disabled={loading}
->
-Auto Allocate Room
-</button>
-
+      <button
+        onClick={onAutoAllocate}
+        className={`transition-transform transform hover:scale-105 hover:bg-[#a00000] active:scale-95 ${autoButtonClassName} mt-6 mb-6 px-6 py-3 rounded-lg shadow-md`}
+        disabled={loading}
+      >
+        Auto Allocate Room
+      </button>
 
       {selectedStudentId && (
         <div className="mt-4 p-4 border border-gray-300 rounded">
@@ -146,7 +149,6 @@ Auto Allocate Room
                   Allocate Room for {studentName}
                 </h3>
 
-                {/* Select Hostel */}
                 <label className="block font-medium mb-1">Select Hostel</label>
                 <select
                   onChange={(e) => setSelectedHostelId(e.target.value)}
@@ -154,14 +156,15 @@ Auto Allocate Room
                   disabled={loading}
                 >
                   <option value="">Select Hostel</option>
-                  {hostels.map((hostel) => (
-                    <option key={hostel.hostel_id} value={hostel.hostel_id}>
-                      {hostel.name}
-                    </option>
-                  ))}
+                  {hostels
+                    .filter(h => h.type === (selectedStudent?.gender === 'Male' ? 'Boys' : 'Girls'))
+                    .map((hostel) => (
+                      <option key={hostel.hostel_id} value={hostel.hostel_id}>
+                        {hostel.name}
+                      </option>
+                    ))}
                 </select>
 
-                {/* Select Room */}
                 {selectedHostelId && (
                   <>
                     <label className="block font-medium mb-1">Select Room</label>
@@ -174,11 +177,7 @@ Auto Allocate Room
                       <option value="">Select Room</option>
                       {availableRooms.map((room) => (
                         <option key={room.room_id} value={room.room_id}>
-                          {`Room ${room.number} (Vacancy: ${room.vacancy}, Occupants: ${
-                            room.occupants?.length
-                              ? room.occupants.map((o) => o.name).join(', ')
-                              : 'None'
-                          })`}
+                          {`Room ${room.number} (Vacancy: ${room.vacancy}, Occupants: ${room.occupants?.length ? room.occupants.map((o) => o.name).join(', ') : 'None'})`}
                         </option>
                       ))}
                     </select>

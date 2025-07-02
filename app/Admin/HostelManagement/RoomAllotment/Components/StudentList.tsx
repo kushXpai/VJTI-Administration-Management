@@ -43,38 +43,49 @@ const filteredStudents = filterByCourse(pending, selectedCourse);
         Showing {filteredStudents.length} pending students
       </p>
 
-      <table className="w-full border-collapse border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-300 p-2">Name</th>
-            <th className="border border-gray-300 p-2">Course</th>
-            <th className="border border-gray-300 p-2">Gender</th>
-            <th className="border border-gray-300 p-2">Status</th>
-            <th className="border border-gray-300 p-2">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredStudents.map((student) => (
-            <tr key={student.id}>
-              <td className="border border-gray-300 p-2">
-                {student.profiles_db?.[0]?.name || 'N/A'}
-              </td>
-              <td className="border border-gray-300 p-2">{student.course}</td>
-              <td className="border border-gray-300 p-2">{student.gender}</td>
-              <td className="border border-gray-300 p-2">Pending</td>
-              <td className="border border-gray-300 p-2">
-                <button
-                  onClick={() => onSelectStudent(student.student_id)}
-                  className="bg-red-500 text-white px-4 py-1 rounded"
-                  disabled={loading}
-                >
-                  Allocate Manually
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="overflow-x-auto max-w-full border rounded shadow-sm">
+  <table className="min-w-[800px] w-full border-collapse border border-gray-300">
+    <thead>
+      <tr className="bg-gray-100">
+        <th className="border border-gray-300 p-2">Name</th>
+        <th className="border border-gray-300 p-2">Course</th>
+        <th className="border border-gray-300 p-2">Gender</th>
+        <th className="border border-gray-300 p-2">Status</th>
+        <th className="border border-gray-300 p-2">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+  {filteredStudents.length === 0 ? (
+    <tr>
+      <td colSpan={5} className="text-center text-gray-500 py-4">
+        ✅ All students have been allotted rooms. No pending students left for manual allocation.
+      </td>
+    </tr>
+  ) : (
+    filteredStudents.map((student) => (
+      <tr key={student.id} className="hover:bg-gray-50 transition-all duration-200">
+        <td className="border border-gray-300 p-2">
+          {student.profiles_db?.[0]?.name || 'N/A'}
+        </td>
+        <td className="border border-gray-300 p-2">{student.course}</td>
+        <td className="border border-gray-300 p-2">{student.gender}</td>
+        <td className="border border-gray-300 p-2">Pending</td>
+        <td className="border border-gray-300 p-2">
+          <button
+            onClick={() => onSelectStudent(student.student_id)}
+            className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600 disabled:opacity-50"
+            disabled={loading}
+          >
+            Allocate Manually
+          </button>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
+
+  </table>
+</div>
     </div>
   );
 };

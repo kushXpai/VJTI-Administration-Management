@@ -1,11 +1,11 @@
+// utils/autoAllocateRooms.ts
 import { supabase } from '@/supabase/supabaseClient';
 import { StudentApplication, Room, Hostel, Mess } from '../Types/Type';
 
 export const getMessForHostel = (hostelName: string, gender: string): string | null => {
-  if (["C Block", "D Block", "E Block"].includes(hostelName)) return hostelName;
-  if (hostelName === "PG Block" && gender === "Male") {
-    return Math.random() < 0.5 ? "C Block" : "D Block";
-  }
+  if (hostelName === "C Block") return "C Block";
+  if (hostelName === "D Block") return "D Block";
+  if (hostelName === "PG Block") return "C Block"; // PG → C Block mess
   if (["A Block", "B Block", "E Block"].includes(hostelName) && gender === "Female") {
     return "E Block";
   }
@@ -27,11 +27,17 @@ export const autoAllocateRooms = async (
       s.block_allotment_status === 'Pending'
   );
 
-  const vacantRooms = rooms.filter((r) => r.vacancy > 0);
-
   for (const student of eligibleStudents) {
-    const room = vacantRooms.find((r) => r.vacancy > 0);
-    if (!room) break;
+    const gender = student.gender;
+    const genderHostelType = gender === 'Male' ? 'Boys' : 'Girls';
+
+    const matchingHostels = hostels.filter(h => h.type === genderHostelType);
+    const validRooms = rooms.filter(
+      (r) => r.vacancy > 0 && matchingHostels.some(h => h.hostel_id === r.hostel_id)
+    );
+
+    const room = validRooms.find((r) => r.vacancy > 0);
+    if (!room) continue;
 
     const hostel = hostels.find((h) => h.hostel_id === room.hostel_id);
     if (!hostel) continue;
@@ -80,4 +86,16 @@ export const autoAllocateRooms = async (
   }
 
   refreshData();
+};
+
+export const getValidRoomsForManual = (
+  gender: string,
+  hostels: Hostel[],
+  rooms: Room[]
+): Room[] => {
+  const genderHostelType = gender === 'Male' ? 'Boys' : 'Girls';
+  const matchingHostels = hostels.filter(h => h.type === genderHostelType);
+  return rooms.filter(
+    (r) => r.vacancy > 0 && matchingHostels.some(h => h.hostel_id === r.hostel_id)
+  );
 };
