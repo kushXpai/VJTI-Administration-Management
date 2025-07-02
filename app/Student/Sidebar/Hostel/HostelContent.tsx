@@ -1,5 +1,3 @@
-// app/Student/Sidebar/Hostel/HostelContent.tsx
-
 'use client';
 import { useEffect, useState } from 'react';
 import HostelApplication from './HostelApplication/HostelApplication';
@@ -20,7 +18,7 @@ interface User {
 }
 
 interface AllotmentDetails {
-  building_name: string; // Will be hostel name
+  building_name: string;
   room_number: string;
 }
 
@@ -44,12 +42,12 @@ export default function HostelContent({ user }: HostelContentProps) {
       }
 
       try {
-        // Step 1: Fetch application data
-        const { data: applicationData, error: applicationError } = await supabase
-          .from('hostel_applications_db')
-          .select('hostel_applications_status, provisional_status, hostel_fees_url, hostel_id, room_id')
-          .eq('student_id', user.id)
-          .single();
+       const { data: applicationData, error: applicationError } = await supabase
+  .from('hostel_applications_db')
+  .select('hostel_applications_status, provisional_status, hostel_fees_url, hostel_id, room_id, final_allotment_status')
+  .eq('student_id', user.id)
+  .single();
+
 
         if (applicationError && applicationError.code !== 'PGRST116') {
           console.error('Error fetching hostel application:', applicationError.message);
@@ -65,8 +63,14 @@ export default function HostelContent({ user }: HostelContentProps) {
         setIsAllotmentAccepted(applicationData !== null && status === 'Accepted' && provisional === 'Accepted');
         setHasUploadedReceipt(!!feesUploaded);
 
-        // Step 2: If provisionally accepted, fetch room and hostel details
-        if (isAllotmentAccepted && applicationData?.room_id && applicationData?.hostel_id) {
+        // ✅ Fetch Room and Hostel if status is accepted and IDs are present
+       if (
+  applicationData?.hostel_applications_status === 'Accepted' &&
+  applicationData?.provisional_status === 'Accepted' &&
+  applicationData?.final_allotment_status === true &&
+  applicationData?.room_id &&
+  applicationData?.hostel_id
+) {
           const { data: roomData, error: roomError } = await supabase
             .from('room_db')
             .select('number')
@@ -93,7 +97,7 @@ export default function HostelContent({ user }: HostelContentProps) {
 
           setAllotmentDetails({
             building_name: hostelData?.name || 'Not assigned',
-            room_number: roomData?.number || 'Not assigned',
+            room_number: roomData?.number?.toString() || 'Not assigned',
           });
         }
 
@@ -106,7 +110,7 @@ export default function HostelContent({ user }: HostelContentProps) {
     }
 
     checkExistingApplication();
-  }, [user, isAllotmentAccepted]);
+  }, [user]);
 
   if (isLoading || !user) return <div>Loading user data...</div>;
   if (error) return <div className="text-red-500 p-6">{error}</div>;
