@@ -72,9 +72,13 @@ export default function Dashboard({ user }: DashboardProps) {
         const resolved = grievances.filter(g => g.status === 'Resolved').length;
         const rejected = grievances.filter(g => g.status === 'Rejected').length;
         setStats({ inProgress, resolved, rejected });
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error(e);
-        setError(e.message || 'Something went wrong');
+        if (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: string }).message === 'string') {
+          setError((e as { message: string }).message);
+        } else {
+          setError('Something went wrong');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -88,6 +92,17 @@ export default function Dashboard({ user }: DashboardProps) {
 
   return (
     <div>
+      <div className="bg-gradient-to-r from-red-900 to-red-700 text-white rounded-2xl p-6 mb-6 shadow-md">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-2xl mb-2">Welcome back, {user?.name.split(' ')[0]}</h2>
+            <p className="text-red-100">{user?.department} {user?.year}</p>
+          </div>
+          <div className="hidden sm:block">
+            <FiBook size={48} className="text-red-200 opacity-50" />
+          </div>
+        </div>
+      </div>
       {/* Header omitted for brevity */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md">
