@@ -17,7 +17,7 @@ interface Profile {
 }
 
 export default function ReviewApplications() {
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [, setApplications] = useState<Application[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
