@@ -26,7 +26,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
   updateStatus
 }) => {
   const [status, setStatus] = useState<'Pending' | 'Paid'>(
-    application.hostel_fees_status as 'Pending' | 'Paid'
+    application.review_fee_status as 'Pending' | 'Paid'
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 

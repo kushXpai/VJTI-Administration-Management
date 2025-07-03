@@ -1,4 +1,5 @@
 // app/Admin/HostelManagement/ReviewApplications/Utilities/Components/CourseSidebar.tsx
+
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../../../../supabase/supabaseClient';
 import { courseMapping } from '../../Utilities/Constants/courseData';
@@ -32,24 +33,19 @@ export default function CourseSidebar() {
   const fetchApplicationStats = async () => {
     setIsLoading(true);
     try {
-      // Fetch all hostel applications
       const { data: applications, error } = await supabase
-        .from('hostel_applications')
-        .select('*');
+        .from('hostel_applications_db')
+        .select('id, course, hostel_applications_status');
 
       if (error) throw error;
 
-      // Track the total number of applications
       setTotalApplications(applications?.length || 0);
 
-      // Create a map to store course statistics
       const courseStatsMap: { [course: string]: CourseStats } = {};
 
-      // Process applications
       applications?.forEach(app => {
         if (!app.course) return;
 
-        // Initialize course stats if not exists
         if (!courseStatsMap[app.course]) {
           courseStatsMap[app.course] = {
             accepted: 0,
@@ -59,36 +55,31 @@ export default function CourseSidebar() {
           };
         }
 
-        // Increment total count
         courseStatsMap[app.course].total++;
 
-        // Increment appropriate status count
-        if (app.hostel_application_status === 'Accepted') {
+        if (app.hostel_applications_status === 'Accepted') {
           courseStatsMap[app.course].accepted++;
-        } else if (app.hostel_application_status === 'Pending') {
+        } else if (app.hostel_applications_status === 'Pending') {
           courseStatsMap[app.course].pending++;
-        } else if (app.hostel_application_status === 'Rejected') {
+        } else if (app.hostel_applications_status === 'Rejected') {
           courseStatsMap[app.course].rejected++;
         }
       });
 
-      // Categorize courses
       const diplomaCourses: CourseData = {};
       const graduationCourses: CourseData = {};
       const postGraduationCourses: CourseData = {};
 
-      // Only include courses that have applications
       Object.keys(courseStatsMap).forEach(course => {
         if (course.startsWith('Diploma')) {
           diplomaCourses[course] = courseStatsMap[course];
-        } else if (course.startsWith('BTech')) {
+        } else if (course.startsWith('B.Tech')) {
           graduationCourses[course] = courseStatsMap[course];
-        } else if (course.startsWith('MTech') || course === 'MCA') {
+        } else if (course.startsWith('M.Tech') || course === 'Master of Computer Applications') {
           postGraduationCourses[course] = courseStatsMap[course];
         }
       });
 
-      // Create categorized data
       const categories: CategoryData[] = [];
 
       if (Object.keys(diplomaCourses).length > 0) {
