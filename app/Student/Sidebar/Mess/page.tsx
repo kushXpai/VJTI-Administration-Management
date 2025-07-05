@@ -5,10 +5,10 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface Menu {
   mess_id: string;
-  day_of_week: number;
+  day_code: number;
   breakfast: string;
   lunch: string;
-  snacks: string;
+  snack: string;
   dinner: string;
 }
 
@@ -50,10 +50,11 @@ export default function StudentMessMenu() {
 
   const getCurrentMeal = () => {
     const hour = new Date().getHours();
-    if (hour >= 6 && hour < 11) return 'breakfast';
-    if (hour >= 11 && hour < 17) return 'lunch';
-    if (hour >= 17 && hour < 20) return 'snacks';
-    return 'dinner';
+    if (hour >= 8 && hour < 10) return 'breakfast';
+    if (hour >= 12 && hour < 14) return 'lunch';
+    if (hour >= 16 && hour < 18) return 'snack';
+    if (hour >= 19 && hour < 21) return 'dinner';
+    return 'none';
   };
 
   const formatItems = (items: string) => {
@@ -95,10 +96,10 @@ export default function StudentMessMenu() {
       // Today's Menu
       const currentDay = getCurrentDayOfWeek();
       const { data: today, error: todayErr } = await supabase
-        .from('mess_menu')
+        .from('mess_menu_db')
         .select('*')
         .eq('mess_id', hostelData.mess_id)
-        .eq('day_of_week', currentDay)
+        .eq('day_code', currentDay)
         .single();
 
       if (todayErr || !today) throw new Error('Menu not available for today');
@@ -106,10 +107,10 @@ export default function StudentMessMenu() {
 
       // Weekly Menu
       const { data: week, error: weekErr } = await supabase
-        .from('mess_menu')
+        .from('mess_menu_db')
         .select('*')
         .eq('mess_id', hostelData.mess_id)
-        .order('day_of_week');
+        .order('day_code');
 
       if (weekErr || !week) throw new Error('Weekly menu not available');
       setWeeklyMenu(week);
@@ -179,16 +180,16 @@ export default function StudentMessMenu() {
                 <tbody>
                   {weeklyMenu.map((menu) => (
                     <tr
-                      key={menu.day_of_week}
-                      className={`hover:bg-gray-100 ${dayColors[menu.day_of_week]} transition`}
+                      key={menu.day_code}
+                      className={`hover:bg-gray-100 ${dayColors[menu.day_code]} transition`}
                     >
                       <td className="p-4 font-semibold border text-center">
-                        {dayNames[menu.day_of_week]}
-                        {menu.day_of_week === currentDay && (
+                        {dayNames[menu.day_code]}
+                        {menu.day_code === currentDay && (
                           <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Today</span>
                         )}
                       </td>
-                      {(['breakfast', 'lunch', 'snacks', 'dinner'] as const).map((meal) => (
+                      {(['breakfast', 'lunch', 'snack', 'dinner'] as const).map((meal) => (
                         <td key={meal} className="p-4 border">
                           <ul className="list-disc list-inside text-gray-700 space-y-1">
                             {formatItems(menu[meal]).map((item, i) => (
@@ -208,7 +209,7 @@ export default function StudentMessMenu() {
         ) : (
           todayMenu && (
             <div className="space-y-6 mt-4">
-              {(['breakfast', 'lunch', 'snacks', 'dinner'] as const).map((meal) => (
+              {(['breakfast', 'lunch', 'snack', 'dinner'] as const).map((meal) => (
                 <div
                   key={meal}
                   className={`p-4 rounded-xl shadow-sm ${

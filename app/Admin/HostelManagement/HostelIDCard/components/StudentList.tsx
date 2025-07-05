@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Student } from '../types/studentTypes';
 import { generateIDCardPDF } from '../utils/pdfUtils';
+import { formatCourseFileName, uiToDbCourseMap } from '../utils/courseData';
 
 interface StudentListProps {
   students: Student[];
@@ -15,19 +16,43 @@ export default function StudentList({ students, specialization }: StudentListPro
 
   const handleGenerate = async () => {
     setGenerating(true);
-    const selected = students.filter(s => selectedStudents.includes(s.id));
-    const pdfBytes = await generateIDCardPDF(selected);
 
+    const selected = students.filter(s => selectedStudents.includes(s.id));
+    if (selected.length === 0) {
+      setGenerating(false);
+      return;
+    }
+
+    // Detect stream (B.Tech / M.Tech / Diploma / MCA) from course
+    const dbCourse = selected[0]?.course;
+    let stream: string | undefined;
+
+    for (const [key, specMap] of Object.entries(uiToDbCourseMap)) {
+      for (const val of Object.values(specMap)) {
+        if (val === dbCourse) {
+          stream = key;
+          break;
+        }
+      }
+      if (stream) break;
+    }
+
+    const year = new Date().getFullYear();
+    const fileName = formatCourseFileName(stream ?? 'unknown', specialization, year);
+
+    const pdfBytes = await generateIDCardPDF(selected);
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${specialization.replace(/\s+/g, '_')}_ID_Cards.pdf`;
+    link.download = fileName;
     link.click();
+
     setGenerating(false);
   };
 
   const toggleSelect = (id: number) => {
-    setSelectedStudents(prev => 
+    setSelectedStudents(prev =>
       prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
     );
   };
@@ -41,7 +66,9 @@ export default function StudentList({ students, specialization }: StudentListPro
     }
   };
 
-  if (students.length === 0) return <p className="text-gray-600">No students found for this specialization.</p>;
+  if (students.length === 0) {
+    return <p className="text-gray-600">No students found for this specialization.</p>;
+  }
 
   return (
     <div className="mt-6">
@@ -52,7 +79,7 @@ export default function StudentList({ students, specialization }: StudentListPro
         >
           {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
         </button>
-        
+
         <button
           onClick={handleGenerate}
           disabled={generating || selectedStudents.length === 0}
@@ -64,8 +91,8 @@ export default function StudentList({ students, specialization }: StudentListPro
 
       <div className="grid grid-cols-1 gap-2">
         {students.map(student => (
-          <label 
-            key={student.id} 
+          <label
+            key={student.id}
             className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded"
           >
             <input
