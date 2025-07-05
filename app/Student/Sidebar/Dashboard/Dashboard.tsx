@@ -136,7 +136,7 @@ export default function Dashboard({ user }: DashboardProps) {
             <h3 className="font-semibold text-gray-700">Pending Concerns</h3>
             <FiAlertCircle className="text-red-800" size={18} />
           </div>
-          <p className="text-3xl font-bold text-gray-800 mb-1">{stats.inProgress}</p>
+          <p className="text-3xl font-bold text-gray-800 mb-1">{stats.inProgress} InProgress</p>
           <p className="text-sm text-gray-500">{stats.resolved} resolved</p>
           <p className="text-sm text-gray-500">{stats.rejected} rejected</p>
         </div>
