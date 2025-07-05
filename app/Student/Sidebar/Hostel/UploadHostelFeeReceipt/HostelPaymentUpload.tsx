@@ -24,7 +24,7 @@ export default function HostelPaymentUpload({ user, onUploadSuccess }: HostelPay
 
   useEffect(() => {
     async function fetchHostelName() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('hostel_applications_db')
         .select('hostel_id')
         .eq('student_id', user.id)

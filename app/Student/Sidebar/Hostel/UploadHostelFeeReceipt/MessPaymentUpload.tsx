@@ -24,7 +24,7 @@ export default function MessPaymentUpload({ user, onUploadSuccess }: MessPayment
 
   useEffect(() => {
     async function fetchMessName() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('hostel_applications_db')
         .select('mess_id')
         .eq('student_id', user.id)
