@@ -40,7 +40,7 @@ export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptP
                 // Check application status and if receipt is already uploaded
                 const { data, error } = await supabase
                     .from('hostel_applications_db')
-                    .select('hostel_applications_status, allotment_status, hostel_fees_url')
+                    .select('hostel_applications_status, block_allotment_status, hostel_fees_url')
                     .eq('student_id', user.id)
                     .single();
 
@@ -52,7 +52,7 @@ export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptP
                 setIsAllotmentAccepted(
                     data !== null &&
                     data.hostel_applications_status === 'Accepted' &&
-                    data.allotment_status === 'Accepted'
+                    data.block_allotment_status === 'Accepted'
                 );
 
                 // If hostel_fee_receipt_url exists, set hasUploadedReceipt to true
