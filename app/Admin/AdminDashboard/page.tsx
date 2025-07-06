@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/supabase/supabaseClient';
+import path from 'path';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -119,6 +120,10 @@ export default function AdminDashboard() {
       items: [
         { name: 'Update Mess Menu', path: '/Admin/MessManagement/UpdateMenu', icon: '📋' },
         { name: 'Manage Payments', path: '/Admin/MessManagement/ManagePayments', icon: '💳' },
+        { name: 'Mess Revenue', path: '/Admin/MessManagement/PaymentBlockwise', icon: '📊' },
+        { name : 'Hostel Revenue', path: '/Admin/MessManagement/RevenueHostelBlockWise',icon:'📊'},
+        { name : 'Mess Change', path: '/Admin/MessManagement/MessChange',icon:'📊'},
+        
         // { name: 'Track Inventory', path: '/Admin/MessManagement/TrackInventory' },
         // { name: 'Feedbacks', path: '/Admin/MessManagement/Feedbacks' },
         // { name: 'Mess Attendence', path: '/Admin/MessManagement/MessAttendance' },

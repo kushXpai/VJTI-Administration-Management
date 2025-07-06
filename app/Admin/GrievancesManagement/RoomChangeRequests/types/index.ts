@@ -29,3 +29,18 @@ export interface Student {
   course: string;
   room_number: number
 }
+
+
+export interface StudentResult {
+  id: string;
+  name: string;
+  cet_application_id: string;
+  course: string;
+  gender: string;
+  mobile_number: string;
+  room_id: string | null;
+  room_number: string | null;
+  hostel_id: string | null;
+  hostel_name: string;
+  hostel_allotment_status: 'Pending' | 'Accepted' | 'Rejected';
+}

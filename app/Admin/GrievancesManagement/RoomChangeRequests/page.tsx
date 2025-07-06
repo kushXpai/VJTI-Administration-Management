@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { SearchComponent } from './components/SearchComponent';
 import { SwapRooms } from './components/SwapRooms';
+import ChangeRoomModal from './components/ChangeRoomModal';
 import { Toaster } from 'react-hot-toast';
 import { StudentResult } from './types';
 import Header from '@/app/Components/Header';
@@ -10,20 +11,30 @@ import Footer from '@/app/Components/Footer';
 
 const RoomChangePage = () => {
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+  const [isChangeModalOpen, setIsChangeModalOpen] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<StudentResult[]>([]);
+  const [selectedStudentForChange, setSelectedStudentForChange] = useState<StudentResult | null>(null);
 
   const handleSwap = (students: StudentResult[]) => {
     if (students.length === 2) {
-      console.log('HandleSwap:', students.map((s) => s.id));
       setSelectedStudents(students);
       setIsSwapModalOpen(true);
     }
   };
 
+  const handleOpenChangeRoom = (student: StudentResult) => {
+    setSelectedStudentForChange(student);
+    setIsChangeModalOpen(true);
+  };
+
   const handleCloseSwap = () => {
-    console.log('Closing swap modal, clearing selections');
     setIsSwapModalOpen(false);
     setSelectedStudents([]);
+  };
+
+  const handleCloseChangeRoom = () => {
+    setIsChangeModalOpen(false);
+    setSelectedStudentForChange(null);
   };
 
   return (
@@ -32,12 +43,13 @@ const RoomChangePage = () => {
       <main className="flex-grow py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-semibold text-gray-900">Room Change Requests</h1>
-    
+            <h1 className="text-3xl font-semibold text-[#800000]">Room Change Requests</h1>
           </div>
+
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <SearchComponent onSwap={handleSwap} />
+            <SearchComponent onSwap={handleSwap} onChangeRoom={handleOpenChangeRoom} />
           </div>
+
           {selectedStudents.length === 2 && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <SwapRooms
@@ -48,7 +60,20 @@ const RoomChangePage = () => {
               />
             </div>
           )}
+
+          {selectedStudentForChange && (
+            <ChangeRoomModal
+              isOpen={isChangeModalOpen}
+              onClose={handleCloseChangeRoom}
+              student={{
+                ...selectedStudentForChange,
+                hostel_id: selectedStudentForChange?.hostel_id ?? undefined,
+                room_id: selectedStudentForChange?.room_id ?? undefined,
+              }}
+            />
+          )}
         </div>
+
         <Toaster position="top-right" toastOptions={{
           style: {
             background: '#ffffff',
@@ -62,6 +87,6 @@ const RoomChangePage = () => {
       <Footer />
     </div>
   );
-}
+};
 
 export default RoomChangePage;
