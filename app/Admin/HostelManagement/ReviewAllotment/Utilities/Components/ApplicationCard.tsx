@@ -64,6 +64,8 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
           <InfoRow label="CET Application ID" value={application.cet_application_id} />
           <InfoRow label="CET Rank" value={application.cet_rank} />
           <InfoRow label="Aadhar Number" value={application.aadhar_card_number} />
+          <InfoRow label="Payment Type" value={application.hostel_payment_type} />
+          <InfoRow label='Amount Paid' value={application.hostel_feed_paid}/>
         </div>
 
         <div className="space-y-2 mb-4">
@@ -100,7 +102,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
 };
 
 const InfoRow: React.FC<{ label: string; value: string | number | null }> = ({ label, value }) => {
-  if (!value) return null;
+  if (value===null ||  value===undefined) return null;
 
   return (
     <div className="flex justify-between">
