@@ -1,5 +1,4 @@
-// app/Admin/HostelManagement/ReviewApplications/page.tsx
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../supabase/supabaseClient';
@@ -18,12 +17,13 @@ interface Profile {
 }
 
 export default function ReviewApplications() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [, setApplications] = useState<Application[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [courseGroups, setCourseGroups] = useState<Record<string, Application[]>>({});
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
 
   useEffect(() => {
     fetchData();
@@ -34,21 +34,25 @@ export default function ReviewApplications() {
     try {
       // Fetch hostel applications
       const { data: applicationsData, error: applicationsError } = await supabase
-        .from('hostel_applications')
+        .from('hostel_applications_db')
         .select('*');
 
       if (applicationsError) throw applicationsError;
 
-      // Fetch profiles to get names
+      // Fetch student profiles
       const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .eq('role', 'student');
+        .from('profiles_db')
+        .select('student_id, name, email')
+        .eq('role', 'Student');
 
       if (profilesError) throw profilesError;
 
       setApplications(applicationsData || []);
-      setProfiles(profilesData || []);
+      setProfiles(profilesData?.map(profile => ({
+        id: profile.student_id,
+        name: profile.name,
+        email: profile.email
+      })) || []);
 
       // Group applications by course
       const groups: Record<string, Application[]> = {};
@@ -68,34 +72,35 @@ export default function ReviewApplications() {
     }
   };
 
-  const updateApplicationStatus = async (id: string, status: 'Accepted' | 'Pending' | 'Rejected') => {
+  const updateApplicationStatus = async (
+    id: string,
+    status: 'Accepted' | 'Pending' | 'Rejected'
+  ) => {
     try {
       const { error } = await supabase
-        .from('hostel_applications')
-        .update({ hostel_application_status: status })
+        .from('hostel_applications_db')
+        .update({ hostel_applications_status: status })
         .eq('id', id);
 
       if (error) throw error;
 
-      // Update local state to reflect the change
       setApplications(prev =>
         prev.map(app =>
-          app.id === id ? { ...app, hostel_application_status: status } : app
+          app.id === id ? { ...app, hostel_applications_status: status } : app
         )
       );
 
-      // Update course groups state
       setCourseGroups(prev => {
         const newGroups = { ...prev };
         Object.keys(newGroups).forEach(course => {
           newGroups[course] = newGroups[course].map(app =>
-            app.id === id ? { ...app, hostel_application_status: status } : app
+            app.id === id ? { ...app, hostel_applications_status: status } : app
           );
         });
         return newGroups;
       });
 
-      // Trigger a refresh of the sidebar by reloading the page
+      // Refresh sidebar
       window.location.reload();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -103,25 +108,32 @@ export default function ReviewApplications() {
     }
   };
 
-  // Get student name from profile
   const getStudentName = (studentId: string): string => {
     const profile = profiles.find((p: Profile) => p.id === studentId);
     return profile?.name ?? 'Unknown Student';
-  };  
+  };
 
-  // Handle course selection
   const handleCourseChange = (course: string | null) => {
     setSelectedCourse(course);
   };
 
-  // Get applications for the selected course or all if none selected
   const getApplicationsToDisplay = () => {
-    if (!selectedCourse) {
-      return Object.entries(courseGroups);
-    }
+    let filteredGroups = Object.entries(courseGroups);
 
-    return Object.entries(courseGroups)
-      .filter(([course]) => course === selectedCourse);
+  if (selectedCourse) {
+    filteredGroups = filteredGroups.filter(([course]) => course === selectedCourse);
+  }
+
+  if (selectedStatus) {
+    filteredGroups = filteredGroups
+      .map(([course, apps]): [string, Application[]] => [
+        course,
+        apps.filter(app => app.hostel_applications_status === selectedStatus)
+      ])
+      .filter(([, apps]) => apps.length > 0);
+  }
+
+  return filteredGroups;
   };
 
   if (isLoading) {
@@ -145,12 +157,10 @@ export default function ReviewApplications() {
       </header>
 
       <div className="flex w-full">
-        {/* Sidebar - Full height and shifted to the left */}
         <div className="w-1/4 p-4 bg-gray-50 min-h-screen">
           <CourseSidebar />
         </div>
-        
-        {/* Main Content */}
+
         <div className="w-3/4 p-6">
           <div className="mb-8">
             <CourseFilter
@@ -158,6 +168,8 @@ export default function ReviewApplications() {
               courseMapping={courseMapping}
               selectedCourse={selectedCourse}
               onCourseChange={handleCourseChange}
+              selectedStatus={selectedStatus}
+              onStatusChange={setSelectedStatus}
             />
           </div>
 

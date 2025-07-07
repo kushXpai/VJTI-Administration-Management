@@ -18,7 +18,7 @@ export const useStudentSearch = (): UseStudentSearchResult => {
   const [error, setError] = useState<string | null>(null);
 
   const [swapLoading, setSwapLoading] = useState(false);
-  const [swapError, setSwapError] = useState<string | null>(null);
+  const [swapError, setSwapError] = useState<string | null>(null);  // ✅ KEEP this
 
   const searchStudents = useCallback(async (term: string) => {
     setLoading(true);
@@ -31,7 +31,7 @@ export const useStudentSearch = (): UseStudentSearchResult => {
         id: item.id,
         name: item.name ?? '',
         cet_application_id: item.cet_application_id ?? '',
-        building_name: item.hostel_name ?? '',   // 🔑 Fix this to match the SwapRooms props
+        building_name: item.hostel_name ?? '',   
         room_number: item.room_number ?? null,
       }));
 

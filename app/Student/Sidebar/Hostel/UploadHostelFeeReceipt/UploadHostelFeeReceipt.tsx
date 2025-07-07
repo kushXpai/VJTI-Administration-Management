@@ -39,9 +39,9 @@ export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptP
             try {
                 // Check application status and if receipt is already uploaded
                 const { data, error } = await supabase
-                    .from('hostel_applications')
-                    .select('hostel_application_status, allotment_status, hostel_fee_receipt_url')
-                    .eq('id', user.id)
+                    .from('hostel_applications_db')
+                    .select('hostel_applications_status, block_allotment_status, hostel_fees_url')
+                    .eq('student_id', user.id)
                     .single();
 
                 if (error && error.code !== 'PGRST116') {
@@ -51,12 +51,12 @@ export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptP
                 // Check if both hostel_application_status and allotment_status are Accepted
                 setIsAllotmentAccepted(
                     data !== null &&
-                    data.hostel_application_status === 'Accepted' &&
-                    data.allotment_status === 'Accepted'
+                    data.hostel_applications_status === 'Accepted' &&
+                    data.block_allotment_status === 'Accepted'
                 );
 
                 // If hostel_fee_receipt_url exists, set hasUploadedReceipt to true
-                setHasUploadedReceipt(data !== null && data.hostel_fee_receipt_url !== null);
+                setHasUploadedReceipt(data !== null && data.hostel_fees_url !== null);
 
             } catch (error) {
                 console.error('Error checking hostel receipt:', error);
@@ -88,7 +88,7 @@ export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptP
             const filePath = `${fileName}.${fileExt}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('hostel_fee_receipts')
+                .from('bucket_hostel_fee_receipts')
                 .upload(filePath, feeReceipt);
 
             if (uploadError) {
@@ -97,16 +97,16 @@ export default function UploadHostelFeeReceipt({ user }: UploadHostelFeeReceiptP
 
             // Get public URL
             const { data: urlData } = supabase.storage
-                .from('hostel_fee_receipts')
+                .from('bucket_hostel_fee_receipts')
                 .getPublicUrl(filePath);
 
             const fileUrl = urlData.publicUrl;
 
             // Update hostel application with receipt URL
             const { error: updateError } = await supabase
-                .from('hostel_applications')
-                .update({ hostel_fee_receipt_url: fileUrl })
-                .eq('id', user.id);
+                .from('hostel_applications_db')
+                .update({ hostel_fees_url: fileUrl })
+                .eq('student_id', user.id);
 
             if (updateError) {
                 throw updateError;

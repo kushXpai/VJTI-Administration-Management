@@ -31,60 +31,47 @@ export default function CourseSidebar() {
   const fetchApplicationStats = async () => {
     setIsLoading(true);
     try {
-      // Fetch all hostel applications
       const { data: applications, error } = await supabase
-        .from('hostel_applications')
-        .select('*');
+        .from('hostel_applications_db')
+        .select('id, course, review_fee_status');
 
       if (error) throw error;
 
-      // Track the total number of applications
       setTotalApplications(applications?.length || 0);
 
-      // Create a map to store course statistics
       const courseStatsMap: { [course: string]: CourseStats } = {};
 
-      // Process applications
       applications?.forEach(app => {
-        if (!app.course) return;
+        const course = app.course;
+        if (!course) return;
 
-        // Initialize course stats if not exists
-        if (!courseStatsMap[app.course]) {
-          courseStatsMap[app.course] = {
-            pending: 0,
-            paid: 0,
-            total: 0
-          };
+        if (!courseStatsMap[course]) {
+          courseStatsMap[course] = { pending: 0, paid: 0, total: 0 };
         }
 
-        // Increment total count
-        courseStatsMap[app.course].total++;
+        courseStatsMap[course].total++;
 
-        // Increment appropriate status count
-        if (app.hostel_fees_status === 'Pending') {
-          courseStatsMap[app.course].pending++;
-        } else if (app.hostel_fees_status === 'Paid') {
-          courseStatsMap[app.course].paid++;
+        if (app.review_fee_status === 'Pending') {
+          courseStatsMap[course].pending++;
+        } else if (app.review_fee_status === 'Paid') {
+          courseStatsMap[course].paid++;
         }
       });
 
-      // Categorize courses
       const diplomaCourses: CourseData = {};
       const graduationCourses: CourseData = {};
       const postGraduationCourses: CourseData = {};
 
-      // Only include courses that have applications
       Object.keys(courseStatsMap).forEach(course => {
         if (course.startsWith('Diploma')) {
           diplomaCourses[course] = courseStatsMap[course];
-        } else if (course.startsWith('BTech')) {
+        } else if (course.startsWith('B.Tech')) {
           graduationCourses[course] = courseStatsMap[course];
-        } else if (course.startsWith('MTech') || course === 'MCA') {
+        } else if (course.startsWith('M.Tech') || course === 'Master of Computer Application') {
           postGraduationCourses[course] = courseStatsMap[course];
         }
       });
 
-      // Create categorized data
       const categories: CategoryData[] = [];
 
       if (Object.keys(diplomaCourses).length > 0) {
@@ -124,8 +111,6 @@ export default function CourseSidebar() {
           <div style={{ backgroundColor: '#86efac' }} className="w-5 h-5 rounded-sm"></div>
           <span className="text-sm ml-2 mr-4">Paid</span>
 
-          
-
           <div style={{ backgroundColor: '#f87171' }} className="w-5 h-5 rounded-sm"></div>
           <span className="text-sm ml-2 mr-4">Pending</span>
 
@@ -150,7 +135,7 @@ export default function CourseSidebar() {
             {Object.entries(category.courses).map(([courseKey, stats]) => (
               <div key={courseKey} className="mb-4">
                 <p className="text-lg mb-2">{getCourseDisplayName(courseKey)}</p>
-                <div className="flex" style={{ gap: '8px' }}>
+                <div className="flex gap-2">
                   <div style={{ backgroundColor: '#86efac' }} className="w-12 h-12 rounded-md flex items-center justify-center text-lg font-semibold">
                     {stats.paid}
                   </div>

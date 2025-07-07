@@ -1,195 +1,140 @@
-// app/Admin/HostelManagement/RoomAllotment/page.tsx
-"use client";
-
-import { useState, useEffect, useMemo } from 'react';
+'use client';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/supabase/supabaseClient';
 import Header from '@/app/Components/Header';
 import Footer from '@/app/Components/Footer';
+import { StudentApplication, Room, Hostel, Mess } from './Types/Type';
 import StudentList from './Components/StudentList';
-import AllocatedStudents from './Components/AllocatedStudents';
-import HostelAvailability from './Components/HostelAvailability';
-import Notification from './Components/Notification';
-import { NotificationProvider } from './Contexts/NotificationContext';
-import { supabase } from '@/supabase/supabaseClient';
-import { HostelApplication, Room, ApplicationStatus, Gender, Degree } from './Types/Type';
-import { degreesData } from './utils/courseUtils';
-
-// Utility function for deep comparison of arrays
-const areArraysEqual = <T extends { id: string | number }>(arr1: T[], arr2: T[]): boolean => {
-  if (arr1.length !== arr2.length) return false;
-  return arr1.every((item1, index) => {
-    const item2 = arr2[index];
-    return (
-      item1.id === item2.id &&
-      Object.keys(item1).every((key) => item1[key as keyof T] === item2[key as keyof T])
-    );
-  });
-};
+import ManualAutoRoomAllocation from './Components/ManualAutoRoomAllocation';
+import AllocatedStudentList from './Components/AllocatedStudentList';
+import { autoAllocateRooms } from './utils/autoAllocateRooms';
 
 export default function RoomAllotmentPage() {
-  const [applications, setApplications] = useState<HostelApplication[]>([]);
+  const [pendingStudents, setPendingStudents] = useState<StudentApplication[]>([]);
+  const [allStudents, setAllStudents] = useState<StudentApplication[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [activeTab, setActiveTab] = useState<Degree>('Bachelor of Technology (B.Tech)');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [messes, setMesses] = useState<Mess[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [selectedCourse, setSelectedCourse] = useState<string>('All');
+  const [selectedGender, setSelectedGender] = useState<string>('All');
 
-  const degrees = degreesData.map((degree) => degree.name);
+  const fetchAllData = async () => {
+    setLoading(true);
+
+    const [pendingRes, allRes, roomsRes, hostelsRes, messesRes] = await Promise.all([
+      supabase
+        .from('hostel_applications_db')
+        .select(`*, profiles_db!hostel_applications_db_student_id_fkey(name)`)
+        .eq('hostel_applications_status', 'Accepted')
+        .eq('provisional_status', 'Accepted')
+        .eq('block_allotment_status', 'Pending'),
+
+      supabase
+        .from('hostel_applications_db')
+        .select(`*, profiles_db!hostel_applications_db_student_id_fkey(name)`),
+
+      supabase.from('room_db').select('*'),
+      supabase.from('hostel_db').select('*'),
+      supabase.from('mess_db').select('*'),
+    ]);
+
+    const rawPending = (pendingRes.data || []) as any[];
+    const typedPending: StudentApplication[] = rawPending.map((s) => ({
+      ...s,
+      profiles_db: s.profiles_db ? [s.profiles_db] : [],
+    }));
+
+    const rawAll = (allRes.data || []) as any[];
+    const typedAll: StudentApplication[] = rawAll.map((s) => ({
+      ...s,
+      profiles_db: s.profiles_db ? [s.profiles_db] : [],
+    }));
+
+    setPendingStudents(typedPending);
+    setAllStudents(typedAll);
+    setRooms((roomsRes.data || []) as Room[]);
+    setHostels((hostelsRes.data || []) as Hostel[]);
+    setMesses((messesRes.data || []) as Mess[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const { data: appData, error: appError } = await supabase
-          .from('hostel_applications')
-          .select('id, cet_application_id, course, gender, hostel_allotment_status, building_name, room_number')
-          .eq('hostel_fees_status', 'Paid');
-
-        if (appError) {
-          console.error('Detailed error fetching applications:', appError);
-          throw new Error(`Failed to fetch applications: ${appError.message || 'Unknown error'}`);
-        }
-
-        console.log('Raw fetched applications (hostel_fees_status = Paid):', appData);
-
-        const appIds = appData?.map((app) => app.id) || [];
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, name')
-          .in('id', appIds);
-
-        if (profileError) {
-          console.error('Detailed error fetching profiles:', profileError);
-          throw new Error(`Failed to fetch profiles: ${profileError.message || 'Unknown error'}`);
-        }
-
-        const mappedApplications: HostelApplication[] = (appData || []).map((app) => {
-          const profile = profileData?.find((p) => p.id === app.id);
-          const rawStatus = app.hostel_allotment_status?.toLowerCase();
-          const normalizedStatus: ApplicationStatus =
-            rawStatus === 'pending'
-              ? 'Pending'
-              : rawStatus === 'accepted'
-              ? 'Accepted'
-              : rawStatus === 'rejected'
-              ? 'Rejected'
-              : 'Pending';
-
-          return {
-            id: app.id,
-            name: profile?.name || app.cet_application_id || app.id,
-            course: app.course,
-            gender: app.gender as Gender,
-            hostel_allotment_status: normalizedStatus,
-            hostel_block: app.building_name,
-            room_number: app.room_number,
-          };
-        });
-
-        console.log('Mapped applications:', mappedApplications);
-        setApplications(mappedApplications);
-
-        const { data: roomData, error: roomError } = await supabase
-          .from('rooms')
-          .select('*');
-
-        if (roomError) {
-          console.error('Detailed error fetching rooms:', roomError);
-          throw new Error(`Failed to fetch rooms: ${roomError.message || 'Unknown error'}`);
-        }
-
-        setRooms(roomData || []);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load data.';
-        console.error('Error in fetchData:', err);
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchAllData();
   }, []);
 
-  // Memoize applications and rooms with deep comparison
-  const memoizedApplications = useMemo(() => applications, [applications]);
-  const memoizedRooms = useMemo(() => rooms, [rooms]);
-
-  // Wrap setApplications and setRooms to avoid unnecessary updates
-  const updateApplications: React.Dispatch<React.SetStateAction<HostelApplication[]>> = (
-    value
-  ) => {
-    const newApplications = typeof value === 'function' ? value(applications) : value;
-    if (!areArraysEqual(applications, newApplications)) {
-      setApplications(newApplications);
-    }
+  const handleManualAllocate = async () => {
+    await fetchAllData();
+    setSelectedStudentId(null);
+    setSelectedRoomId(null);
   };
 
-  const updateRooms: React.Dispatch<React.SetStateAction<Room[]>> = (value) => {
-    const newRooms = typeof value === 'function' ? value(rooms) : value;
-    if (!areArraysEqual(rooms, newRooms)) {
-      setRooms(newRooms);
-    }
+  const handleAutoAllocate = async () => {
+    setLoading(true);
+    await autoAllocateRooms(pendingStudents, rooms, hostels, messes, fetchAllData);
+    await fetchAllData();
+    setLoading(false);
   };
 
-  if (loading) {
-    return <div className="p-6">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="p-6 text-red-600">Error: {error}</div>;
-  }
+  const handleCancel = () => {
+    setSelectedStudentId(null);
+    setSelectedRoomId(null);
+  };
 
   return (
-    <NotificationProvider>
-      <div className="p-6 space-y-6">
-        <Header
-          rightContent={
-            <div className="flex flex-col">
-              <h1 className="text-xl font-bold tracking-tight text-[#800000]">
-                Hostel Room Allocation
-              </h1>
-              <p className="text-sm text-gray-600">Admin Management Panel</p>
-            </div>
-          }
-        />
+    <div className="p-6">
+      <Header
+        rightContent={
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-[#800000]">
+              Hostel Room Allocation
+            </h1>
+            <p className="text-sm text-gray-600">Admin Management Panel</p>
+          </div>
+        }
+      />
 
-        <div className="flex border-b mb-6">
-          {degrees.map((degree) => (
-            <button
-              key={degree}
-              className={`px-4 py-2 font-medium ${
-                activeTab === degree
-                  ? 'border-b-2 text-white bg-red-700'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setActiveTab(degree as Degree)}
-            >
-              {degree
-                .replace('Bachelor of Technology (B.Tech)', 'B.Tech')
-                .replace('Master of Technology (M.Tech)', 'M.Tech')
-                .replace('Master of Computer Application (MCA)', 'MCA')}
-            </button>
-          ))}
-        </div>
+      <h1 className="text-2xl font-bold text-[#800000] mb-6">Room Allotment</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <StudentList
-            course={activeTab}
-            applications={memoizedApplications}
-            setApplications={updateApplications}
-            setRooms={updateRooms}
-            rooms={memoizedRooms}
-          />
-          <AllocatedStudents course={activeTab} applications={memoizedApplications} />
-        </div>
+      {/* Pending Student List */}
+      <StudentList
+        students={pendingStudents}
+        onSelectStudent={(id) => setSelectedStudentId(id)}
+        loading={loading}
+        selectedCourse={selectedCourse}
+        onCourseSelect={setSelectedCourse}
+      />
 
-        <HostelAvailability rooms={memoizedRooms} />
+      {/* Manual & Auto Allocation */}
+      <ManualAutoRoomAllocation
+        students={pendingStudents}
+        rooms={rooms}
+        hostels={hostels}
+        messes={messes}
+        selectedStudentId={selectedStudentId}
+        selectedRoomId={selectedRoomId}
+        loading={loading}
+        onSelectStudent={(id) => setSelectedStudentId(id)}
+        onSelectRoom={(id) => setSelectedRoomId(id)}
+        onAllocateManually={handleManualAllocate}
+        onAutoAllocate={handleAutoAllocate}
+        onCancel={handleCancel}
+      />
 
-        <Notification />
+      {/* Allocated Student List */}
+      <AllocatedStudentList
+        students={allStudents}
+        hostels={hostels}
+        messes={messes}
+        selectedCourse={selectedCourse}
+        onCourseSelect={setSelectedCourse}
+        selectedGender={selectedGender}
+        onGenderChange={setSelectedGender}
+      />
 
-        <Footer />
-      </div>
-    </NotificationProvider>
+      <Footer />
+    </div>
   );
 }

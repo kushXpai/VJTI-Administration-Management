@@ -9,9 +9,9 @@ export default async function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     const { data: profile } = await supabase
-        .from('profiles')
+        .from('profiles_db')
         .select('*')
-        .eq('id', user?.id)
+        .eq('student_id', user?.id)
         .single();
 
     return <HostelContent user={profile} />;

@@ -1,6 +1,6 @@
 // app/Admin/HostelManagement/ManageInfrastructure/Utilities/Components/AddNewBuilding.tsx
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 interface Floor {
@@ -9,10 +9,18 @@ interface Floor {
   startingRoomNumber: number;
 }
 
+interface Mess {
+  mess_id: string;
+  name: string;
+  mess_fees: number;
+}
+
 interface FormData {
   buildingName: string;
   buildingType: "Girls" | "Boys";
   buildingPrefix: string;
+  hostelFees: number;
+  messId: string;
   floors: Floor[];
 }
 
@@ -21,21 +29,64 @@ interface AddNewBuildingProps {
   onSuccess: () => void;
 }
 
+// Helper function to generate UUID
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingProps) {
   const [formData, setFormData] = useState<FormData>({
     buildingName: '',
     buildingType: "Girls",
     buildingPrefix: '',
-    floors: [{ floorNumber: 1, roomCount: 10, startingRoomNumber: 1 }]
+    hostelFees: 0,
+    messId: '',
+    floors: [{ floorNumber: 1, roomCount: 30, startingRoomNumber: 1 }]
   });
   
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string>('');
+  const [messes, setMesses] = useState<Mess[]>([]);
+  const [isLoadingMesses, setIsLoadingMesses] = useState<boolean>(true);
+
+  // Fetch available messes on component mount
+  useEffect(() => {
+    const fetchMesses = async () => {
+      try {
+        setIsLoadingMesses(true);
+        const { data, error } = await supabase
+          .from('mess_db')
+          .select('mess_id, name, mess_fees')
+          .order('name');
+        
+        if (error) {
+          console.error('Error fetching messes:', error);
+          setFormError('Failed to load mess options');
+        } else {
+          setMesses(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching messes:', error);
+        setFormError('Failed to load mess options');
+      } finally {
+        setIsLoadingMesses(false);
+      }
+    };
+
+    fetchMesses();
+  }, [supabase]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: name === 'hostelFees' ? parseInt(value) || 0 : value 
+    }));
   };
 
   // Handle floor room count changes
@@ -53,7 +104,7 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
       ...prev,
       floors: [...prev.floors, { 
         floorNumber: newFloorNumber, 
-        roomCount: 10, 
+        roomCount: 30, 
         startingRoomNumber: 1 
       }]
     }));
@@ -73,6 +124,11 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
     return `${prefix}${floor}${String(roomNumber).padStart(2, '0')}`;
   };
 
+  // Get selected mess details
+  const getSelectedMess = (): Mess | null => {
+    return messes.find(mess => mess.mess_id === formData.messId) || null;
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -80,10 +136,42 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
     setFormError('');
 
     try {
-      // Validate building prefix
+      // Validate required fields
+      if (!formData.buildingName) {
+        throw new Error('Building name is required');
+      }
       if (!formData.buildingPrefix) {
         throw new Error('Building prefix is required');
       }
+      if (formData.hostelFees < 0) {
+        throw new Error('Hostel fees must be 0 or greater');
+      }
+      if (!formData.messId) {
+        throw new Error('Please select a mess');
+      }
+
+      // Calculate total floor count
+      const floorCount = formData.floors.length;
+      
+      // Generate UUID for the hostel
+      const hostelId = generateUUID();
+
+      // First, insert the hostel record with explicit UUID
+      const { error: hostelError } = await supabase
+        .from('hostel_db')
+        .insert({
+          hostel_id: hostelId, // Explicitly provide the UUID
+          name: formData.buildingName,
+          prefix: formData.buildingPrefix,
+          type: formData.buildingType,
+          floor_count: floorCount,
+          hostel_fees: formData.hostelFees,
+          mess_id: formData.messId // Insert the selected mess_id
+        })
+        .select('hostel_id')
+        .single();
+      
+      if (hostelError) throw hostelError;
 
       // Create an array of all rooms to be inserted
       const roomsToInsert = formData.floors.flatMap(floor => {
@@ -91,29 +179,35 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
         for (let i = 0; i < floor.roomCount; i++) {
           const roomNumber = floor.startingRoomNumber + i;
           rooms.push({
-            building_name: formData.buildingName,
-            type: formData.buildingType,
-            floor: floor.floorNumber,
-            room_number: generateRoomNumber(formData.buildingPrefix, floor.floorNumber, roomNumber),
-            capacity: 0,
-            vacant: 0,
-            occupants: 0,
-            occupants_list: []
+            room_id: generateUUID(), // Generate UUID for each room
+            hostel_id: hostelId,
+            number: parseInt(generateRoomNumber(formData.buildingPrefix, floor.floorNumber, roomNumber).replace(/[^0-9]/g, '')),
+            capacity: 1, // Default capacity set to 1 instead of 0 (since CHECK constraint requires capacity > 0)
+            occupancy: 0,
+            occupant_ids: [],
+            floor: floor.floorNumber
           });
         }
         return rooms;
       });
 
       // Insert all rooms in a single batch
-      const { error } = await supabase
-        .from('rooms')
+      const { error: roomsError } = await supabase
+        .from('room_db')
         .insert(roomsToInsert);
       
-      if (error) throw error;
+      if (roomsError) {
+        // If room insertion fails, delete the hostel record to maintain consistency
+        await supabase
+          .from('hostel_db')
+          .delete()
+          .eq('hostel_id', hostelId);
+        throw roomsError;
+      }
       
       onSuccess();
     } catch (error) {
-      console.error('Error adding rooms:', error);
+      console.error('Error adding building:', error);
       setFormError(`Error: ${(error as Error).message}`);
     } finally {
       setIsSubmitting(false);
@@ -132,7 +226,7 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Building Details */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label htmlFor="buildingName" className="block text-sm font-medium text-gray-700 mb-1">
               Building Name
@@ -178,6 +272,46 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
             >
               <option value="Girls">Girls</option>
               <option value="Boys">Boys</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="hostelFees" className="block text-sm font-medium text-gray-700 mb-1">
+              Hostel Fees
+            </label>
+            <input
+              type="number"
+              id="hostelFees"
+              name="hostelFees"
+              value={formData.hostelFees}
+              onChange={handleInputChange}
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#800000]"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="messId" className="block text-sm font-medium text-gray-700 mb-1">
+              Mess Selection
+            </label>
+            <select
+              id="messId"
+              name="messId"
+              value={formData.messId}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#800000]"
+              required
+              disabled={isLoadingMesses}
+            >
+              <option value="">
+                {isLoadingMesses ? 'Loading messes...' : 'Select a mess'}
+              </option>
+              {messes.map((mess) => (
+                <option key={mess.mess_id} value={mess.mess_id}>
+                  {mess.name} (₹{mess.mess_fees})
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -259,6 +393,11 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
           <p className="text-sm">Building: <span className="font-medium">{formData.buildingName || '(Not specified)'}</span></p>
           <p className="text-sm">Type: <span className="font-medium">{formData.buildingType}</span></p>
           <p className="text-sm">Prefix: <span className="font-medium">{formData.buildingPrefix || '(Not specified)'}</span></p>
+          <p className="text-sm">Hostel Fees: <span className="font-medium">₹{formData.hostelFees}</span></p>
+          <p className="text-sm">Selected Mess: <span className="font-medium">{getSelectedMess()?.name || '(Not selected)'}</span></p>
+          {getSelectedMess() && (
+            <p className="text-sm">Mess Fees: <span className="font-medium">₹{getSelectedMess()?.mess_fees}</span></p>
+          )}
           <p className="text-sm">Total Floors: <span className="font-medium">{formData.floors.length}</span></p>
           <p className="text-sm">Total Rooms: <span className="font-medium">{formData.floors.reduce((total, floor) => total + floor.roomCount, 0)}</span></p>
         </div>
@@ -267,8 +406,8 @@ export default function AddNewBuilding({ supabase, onSuccess }: AddNewBuildingPr
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={isSubmitting}
-            className={`px-6 py-2 bg-[#800000] text-white rounded hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-[#800000] ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isSubmitting || isLoadingMesses}
+            className={`px-6 py-2 bg-[#800000] text-white rounded hover:bg-[#600000] focus:outline-none focus:ring-2 focus:ring-[#800000] ${(isSubmitting || isLoadingMesses) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {isSubmitting ? 'Creating...' : 'Create Building'}
           </button>

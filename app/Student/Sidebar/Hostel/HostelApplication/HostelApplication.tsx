@@ -1,13 +1,11 @@
-// app/Student/Sidebar/Hostel/HostelApplication/HostelApplication.tsx
-
 'use client';
 
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+
 
 interface User {
     name: string;
@@ -23,6 +21,11 @@ interface HostelApplicationProps {
 }
 
 export default function HostelApplication({ user }: HostelApplicationProps) {
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
     const [formData, setFormData] = useState({
         date_of_birth: '',
         gender: '',
@@ -55,119 +58,78 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
         aadhar_card_number: '',
     });
 
-    const [ageError, setAgeError] = useState<string>('');
-
+    const [ageError, setAgeError] = useState('');
     const [photo, setPhoto] = useState<File | null>(null);
     const [aadharCard, setAadharCard] = useState<File | null>(null);
     const [acknowledgementReceipt, setAcknowledgementReceipt] = useState<File | null>(null);
     const [feeReceipt, setFeeReceipt] = useState<File | null>(null);
-
+    const [consentForm, setConsentForm] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    if (!user) return <div>Loading user data...</div>;
+    const getMinimumAge = (course: string) => {
+        if (course.startsWith('Diploma')) return { years: 15, months: 6 };
+        if (course.startsWith('BTech')) return { years: 17, months: 6 };
+        if (course === 'MCA') return { years: 20, months: 6 };
+        if (course.startsWith('MTech')) return { years: 21, months: 6 };
+        return { years: 15, months: 6 };
+    };
+
+    const validateAge = (dob: string, course: string) => {
+        if (!dob || !course) return { isValid: true, message: '' };
+        const birthDate = new Date(dob);
+        const now = new Date();
+        const min = getMinimumAge(course);
+        const minDate = new Date(now);
+        minDate.setFullYear(now.getFullYear() - min.years);
+        minDate.setMonth(now.getMonth() - min.months);
+
+        if (birthDate > minDate) {
+            return {
+                isValid: false,
+                message: `Minimum age required: ${min.years} years and ${min.months} months for ${course}`,
+            };
+        }
+        return { isValid: true, message: '' };
+    };
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target as HTMLInputElement;
+        const checked = (e.target as HTMLInputElement).checked;
 
         if (type === 'checkbox') {
-            const { checked } = e.target as HTMLInputElement;
             setFormData(prev => ({ ...prev, [name]: checked }));
         } else {
             setFormData(prev => {
-                const newFormData = { ...prev, [name]: value };
-                
+                const newForm = { ...prev, [name]: value };
                 if (name === 'date_of_birth' || name === 'course') {
-                    const dateOfBirth = name === 'date_of_birth' ? value : newFormData.date_of_birth;
-                    const course = name === 'course' ? value : newFormData.course;
-                    
-                    const validation = validateAge(dateOfBirth, course);
+                    const validation = validateAge(
+                        name === 'date_of_birth' ? value : newForm.date_of_birth,
+                        name === 'course' ? value : newForm.course
+                    );
                     setAgeError(validation.isValid ? '' : validation.message);
                 }
-                
-                return newFormData;
+                return newForm;
             });
         }
     };
 
-    const getMinimumAge = (course: string) => {
-        if (course.startsWith('Diploma')) {
-            return { years: 15, months: 6 };
-        } else if (course.startsWith('BTech')) {
-            return { years: 17, months: 6 };
-        } else if (course === 'MCA') {
-            return { years: 20, months: 6 };
-        } else if (course.startsWith('MTech')) {
-            return { years: 21, months: 6 };
-        }
-        return { years: 15, months: 6 };
-    };
-
-    const validateAge = (dateOfBirth: string, course: string) => {
-        if (!dateOfBirth || !course) return { isValid: true, message: '' };
-        
-        const birthDate = new Date(dateOfBirth);
-        const currentDate = new Date();
-        const minAge = getMinimumAge(course);
-        
-        const minBirthDate = new Date(currentDate);
-        minBirthDate.setFullYear(currentDate.getFullYear() - minAge.years);
-        minBirthDate.setMonth(currentDate.getMonth() - minAge.months);
-        
-        if (birthDate > minBirthDate) {
-            return {
-                isValid: false,
-                message: `Minimum age requirement: ${minAge.years} years and ${minAge.months} months for ${course.replace(/([A-Z])/g, ' $1').trim()}`
-            };
-        }
-        
-        return { isValid: true, message: '' };
-    };
-
-    const handleFileChange = (e: ChangeEvent<HTMLInputElement>, setFile: (file: File | null) => void) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>, setFile: (f: File | null) => void) => {
         if (e.target.files && e.target.files.length > 0) {
             setFile(e.target.files[0]);
         }
     };
 
-    const uploadFile = async (file: File, bucket: string) => {
-        const fileExt = file.name.split('.').pop();
-
-        let filePrefix = '';
-        switch (bucket) {
-            case 'student_photos':
-                filePrefix = 'student_photo';
-                break;
-            case 'aadhar_cards':
-                filePrefix = 'aadhar_card';
-                break;
-            case 'acknowledgement_receipts':
-                filePrefix = 'acknowledgement_receipt';
-                break;
-            case 'fee_receipts':
-                filePrefix = 'fee_receipt';
-                break;
-            default:
-                filePrefix = 'document';
-        }
-
-        const fileName = `${filePrefix}_${user.id}_${Date.now()}.${fileExt}`;
-
-        const { error } = await supabase
-            .storage
-            .from(bucket)
-            .upload(fileName, file);
-
+    const uploadFile = async (file: File, bucket: string, prefix: string) => {
+        const ext = file.name.split('.').pop();
+        const filename = `${prefix}_${user.id}_${Date.now()}.${ext}`;
+        const { error } = await supabase.storage.from(bucket).upload(filename, file);
         if (error) throw error;
-
-        const { data: urlData } = supabase
-            .storage
-            .from(bucket)
-            .getPublicUrl(fileName);
-
-        return urlData.publicUrl;
+        const { data } = supabase.storage.from(bucket).getPublicUrl(filename);
+        return data.publicUrl;
     };
+
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -182,52 +144,47 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
         }
 
         try {
-            let photoUrl = null;
-            let aadharCardUrl = null;
-            let acknowledgementReceiptUrl = null;
-            let feeReceiptUrl = null;
+            const applicationId = uuidv4();
 
-            if (photo) {
-                photoUrl = await uploadFile(photo, 'student_photos');
-            }
+            const photoUrl = photo ? await uploadFile(photo, 'bucket_student_photos', 'student_photo') : null;
+            const aadharUrl = aadharCard ? await uploadFile(aadharCard, 'bucket_aadhar_cards', 'aadhar_card') : null;
+            const ackUrl = acknowledgementReceipt ? await uploadFile(acknowledgementReceipt, 'bucket_application_acknowledgements', 'acknowledgement_receipt') : null;
+            const feeUrl = feeReceipt ? await uploadFile(feeReceipt, 'bucket_college_fee_receipts', 'fee_receipt') : null;
+            const consentUrl = consentForm ? await uploadFile(consentForm, 'bucket_consent_forms', 'consent_form') : null;
 
-            if (aadharCard) {
-                aadharCardUrl = await uploadFile(aadharCard, 'aadhar_cards');
-            }
-
-            if (acknowledgementReceipt) {
-                acknowledgementReceiptUrl = await uploadFile(acknowledgementReceipt, 'acknowledgement_receipts');
-            }
-
-            if (feeReceipt) {
-                feeReceiptUrl = await uploadFile(feeReceipt, 'fee_receipts');
-            }
-
-            const { error: insertError } = await supabase
-                .from('hostel_applications')
-                .insert([{
-                    id: user.id,
+            const { error: insertError } = await supabase.from('hostel_applications_db').insert([
+                {
+                    id: applicationId,
+                    student_id: user.id,
                     ...formData,
-                    photo_url: photoUrl,
-                    aadhar_card_url: aadharCardUrl,
-                    acknowledgement_receipt_url: acknowledgementReceiptUrl,
-                    fee_receipt_url: feeReceiptUrl,
-                }]);
+                    student_photo_url: photoUrl,
+                    aadhar_card_url: aadharUrl,
+                    college_application_form_url: ackUrl,
+                    college_fees_url: feeUrl,
+                    consent_form_url: consentUrl,
+                }
+            ]);
 
-            if (insertError) throw insertError;
+            if (insertError) {
+                console.error("Insert Error:", insertError);
+                throw insertError;
+            }
 
             setSuccess(true);
-        } catch (err: unknown) {
-            if (err instanceof Error) {
+        } catch (err: any) {
+            console.error("Catch Error:", err);
+            if (err?.message) {
                 setError(err.message);
+            } else if (err?.details) {
+                setError(err.details);
             } else {
-                setError('An error occurred while submitting your application.');
+                setError('An unknown error occurred while submitting your application.');
             }
-        }
-        finally {
+        } finally {
             setIsLoading(false);
         }
     };
+
 
     const copyPermanentAddressToPresent = () => {
         setFormData(prev => ({
@@ -243,7 +200,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
     if (success) {
         return (
             <div className="p-6 w-full">
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
                     <strong className="font-bold">Success!</strong>
                     <span className="block sm:inline"> Your hostel application has been submitted successfully.</span>
                 </div>
@@ -256,13 +213,14 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
             <h1 className="text-2xl font-bold mb-6">Hostel Application Form</h1>
 
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
                     <strong className="font-bold">Error!</strong>
                     <span className="block sm:inline"> {error}</span>
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit}>
+
 
                 {/* Academic Information */}
                 <div className="bg-white p-6 rounded-lg shadow-md">
@@ -304,38 +262,40 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                                 <option value="">Select a course</option>
                                 {/* Diploma Courses */}
                                 <optgroup label="Diploma Courses">
-                                    <option value="DiplomaCivilEngineering">Diploma in Civil Engineering</option>
-                                    <option value="DiplomaElectricalEngineering">Diploma in Electrical Engineering</option>
-                                    <option value="DiplomaElectronicsEngineering">Diploma in Electronics Engineering</option>
-                                    <option value="DiplomaMechanicalEngineering">Diploma in Mechanical Engineering</option>
-                                    <option value="DiplomaTextileManufacturers">Diploma in Textile Manufacturers</option>
-                                    <option value="DiplomaChemicalEngineering">Diploma in Chemical Engineering</option>
+                                    <option value="Diploma in Civil Engineering">Diploma in Civil Engineering</option>
+                                    <option value="Diploma in Electrical Engineering">Diploma in Electrical Engineering</option>
+                                    <option value="Diploma in Electronics Engineering">Diploma in Electronics Engineering</option>
+                                    <option value="Diploma in Mechanical Engineering">Diploma in Mechanical Engineering</option>
+                                    <option value="Diploma in Textile Manufacturers">Diploma in Textile Manufacturers</option>
+                                    <option value="Diploma in Chemical Engineering">Diploma in Chemical Engineering</option>
                                 </optgroup>
-                                {/* Bachelor of Technology Degree Courses */}
+
+                                {/* Undergraduate Courses */}
                                 <optgroup label="Undergraduate Courses">
-                                    <option value="BTechCivilEngineering">B.Tech Degree in Civil Engineering</option>
-                                    <option value="BTechComputerEngineering">B.Tech Degree in Computer Engineering</option>
-                                    <option value="BTechElectricalEngineering">B.Tech Degree in Electrical Engineering</option>
-                                    <option value="BTechElectronicsEngineering">B.Tech Degree in Electronics Engineering</option>
-                                    <option value="BTechElectronicsTelecommunicationEngineering">B.Tech Degree in Electronics &amp; Telecommunication Engineering</option>
-                                    <option value="BTechInformationTechnology">B.Tech Degree in Information Technology</option>
-                                    <option value="BTechMechanicalEngineering">B.Tech Degree in Mechanical Engineering</option>
-                                    <option value="BTechProductionEngineering">B.Tech Degree in Production Engineering</option>
-                                    <option value="BTechTextileTechnology">B.Tech Degree in Textile Technology</option>
+                                    <option value="B.Tech Degree in Civil Engineering">B.Tech Degree in Civil Engineering</option>
+                                    <option value="B.Tech Degree in Computer Engineering">B.Tech Degree in Computer Engineering</option>
+                                    <option value="B.Tech Degree in Electrical Engineering">B.Tech Degree in Electrical Engineering</option>
+                                    <option value="B.Tech Degree in Electronics Engineering">B.Tech Degree in Electronics Engineering</option>
+                                    <option value="B.Tech Degree in Electronics & Telecommunication Engineering">B.Tech Degree in Electronics & Telecommunication Engineering</option>
+                                    <option value="B.Tech Degree in Information Technology">B.Tech Degree in Information Technology</option>
+                                    <option value="B.Tech Degree in Mechanical Engineering">B.Tech Degree in Mechanical Engineering</option>
+                                    <option value="B.Tech Degree in Production Engineering">B.Tech Degree in Production Engineering</option>
+                                    <option value="B.Tech Degree in Textile Technology">B.Tech Degree in Textile Technology</option>
                                 </optgroup>
-                                {/* Master of Technology Degree Courses */}
+
+                                {/* Postgraduate Courses */}
                                 <optgroup label="Postgraduate Courses">
-                                    <option value="MCA">Master of Computer Application</option>
-                                    <option value="MTechCivilEngineering">M.Tech Degree in Civil Engineering</option>
-                                    <option value="MTechComputerEngineering">M.Tech Degree in Computer Engineering</option>
-                                    <option value="MTechElectricalEngineering">M.Tech Degree in Electrical Engineering</option>
-                                    <option value="MTechIOT">M.Tech Degree in Internet of Things (IOT)</option>
-                                    <option value="MTechElectronicsTelecommunicationEngineering">M.Tech Degree in Electronics &amp; Telecommunication Engineering</option>
-                                    <option value="MTechMechanicalEngineering">M.Tech Degree in Mechanical Engineering</option>
-                                    <option value="MTechProductionEngineering">M.Tech Degree in Production Engineering</option>
-                                    <option value="MTechProjectManagement">M.Tech Degree in Project Management</option>
-                                    <option value="MTechTechnicalTextile">M.Tech Degree in Technical Textile</option>
-                                    <option value="MTechDefenceTechnology">M.Tech Degree in Defence Technology</option>
+                                    <option value="Master of Computer Application">Master of Computer Application</option>
+                                    <option value="M.Tech Degree in Civil Engineering">M.Tech Degree in Civil Engineering</option>
+                                    <option value="M.Tech Degree in Computer Engineering">M.Tech Degree in Computer Engineering</option>
+                                    <option value="M.Tech Degree in Electrical Engineering">M.Tech Degree in Electrical Engineering</option>
+                                    <option value="M.Tech Degree in Internet of Things (IOT)">M.Tech Degree in Internet of Things (IOT)</option>
+                                    <option value="M.Tech Degree in Electronics & Telecommunication Engineering">M.Tech Degree in Electronics & Telecommunication Engineering</option>
+                                    <option value="M.Tech Degree in Mechanical Engineering">M.Tech Degree in Mechanical Engineering</option>
+                                    <option value="M.Tech Degree in Production Engineering">M.Tech Degree in Production Engineering</option>
+                                    <option value="M.Tech Degree in Project Management">M.Tech Degree in Project Management</option>
+                                    <option value="M.Tech Degree in Technical Textile">M.Tech Degree in Technical Textile</option>
+                                    <option value="M.Tech Degree in Defence Technology">M.Tech Degree in Defence Technology</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -361,7 +321,7 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                         </div>
                     </div>
                 </div>
-                
+
                 {/* Personal Information */}
                 <div className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-semibold mb-4">Personal Information</h2>
@@ -373,9 +333,8 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                                 name="date_of_birth"
                                 value={formData.date_of_birth}
                                 onChange={handleChange}
-                                className={`mt-1 block w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${
-                                    ageError ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`mt-1 block w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${ageError ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 required
                             />
                             {ageError && (
@@ -804,15 +763,37 @@ export default function HostelApplication({ user }: HostelApplicationProps) {
                             />
                             <p className="mt-1 text-sm text-gray-500">Upload the payment receipt of your course fees (maximum 80KB).</p>
                         </div>
+
+                        {/* Consent Form Upload */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Consent Form</label>
+                            <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                onChange={(e) => {
+                                    if (e.target.files && e.target.files.length > 0) {
+                                        const file = e.target.files[0];
+                                        if (file.size > 80 * 1024) {
+                                            alert("Consent form exceeds 80KB limit.");
+                                            e.target.value = "";
+                                        } else {
+                                            handleFileChange(e, setConsentForm);
+                                        }
+                                    }
+                                }}
+                                required
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100"
+                            />
+                            <p className="mt-1 text-sm text-gray-500">Upload your signed consent form (max 80KB).</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Submit Button */}
-                <div className="flex justify-end">
+                <div className="mt-4">
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className={`px-6 py-3 bg-red-700 border border-transparent rounded-md shadow-sm text-base font-medium text-white hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className="px-6 py-3 bg-red-700 text-white rounded hover:bg-red-800 disabled:opacity-50"
                     >
                         {isLoading ? 'Submitting...' : 'Submit Application'}
                     </button>

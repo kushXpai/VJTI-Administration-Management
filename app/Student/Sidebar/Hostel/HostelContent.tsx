@@ -1,9 +1,9 @@
-// app/Student/Sidebar/Hostel/HostelContent.tsx
-
+// HostelContent.tsx
 'use client';
 import { useEffect, useState } from 'react';
 import HostelApplication from './HostelApplication/HostelApplication';
-import UploadHostelFeeReceipt from './UploadHostelFeeReceipt/UploadHostelFeeReceipt';
+import HostelPaymentUpload from './UploadHostelFeeReceipt/HostelPaymentUpload';
+import MessPaymentUpload from './UploadHostelFeeReceipt/MessPaymentUpload';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -31,10 +31,14 @@ interface HostelContentProps {
 export default function HostelContent({ user }: HostelContentProps) {
   const [hasSubmittedApplication, setHasSubmittedApplication] = useState(false);
   const [isAllotmentAccepted, setIsAllotmentAccepted] = useState(false);
-  const [hasUploadedReceipt, setHasUploadedReceipt] = useState(false);
+  const [hasUploadedHostelReceipt, setHasUploadedHostelReceipt] = useState(false);
+  const [hasUploadedMessReceipt, setHasUploadedMessReceipt] = useState(false);
   const [allotmentDetails, setAllotmentDetails] = useState<AllotmentDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isBlockAllotted, setIsBlockAllotted] = useState(false);
+  const [hostelFees, setHostelFees] = useState<number | null>(null);
+  const [messFees, setMessFees] = useState<number | null>(null);
 
   useEffect(() => {
     async function checkExistingApplication() {
@@ -44,39 +48,56 @@ export default function HostelContent({ user }: HostelContentProps) {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('hostel_applications')
-          .select('hostel_application_status, allotment_status, hostel_fee_receipt_url, building_name, room_number')
-          .eq('id', user.id)
+        const { data: applicationData, error: applicationError } = await supabase
+          .from('hostel_applications_db')
+          .select('hostel_applications_status, provisional_status, block_allotment_status, hostel_fees_url, mess_fees_url, hostel_id, room_id, final_allotment_status, hostel_fees, mess_fees')
+          .eq('student_id', user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching hostel application:', error.message);
-          setError(`Failed to fetch application: ${error.message}`);
+        if (applicationError && applicationError.code !== 'PGRST116') {
+          console.error('Error fetching hostel application:', applicationError.message);
+          setError(`Failed to fetch application: ${applicationError.message}`);
           return;
         }
 
-        setHasSubmittedApplication(
-          data !== null && ['Pending', 'Accepted'].includes(data?.hostel_application_status || '')
-        );
+        const status = applicationData?.hostel_applications_status || '';
+        const provisional = applicationData?.provisional_status || '';
+        const hostelReceipt = applicationData?.hostel_fees_url;
+        const messReceipt = applicationData?.mess_fees_url;
+        const blockStatus = applicationData?.block_allotment_status || '';
 
-        setIsAllotmentAccepted(
-          data !== null &&
-          data.hostel_application_status === 'Accepted' &&
-          data.allotment_status === 'Accepted'
-        );
+        setIsBlockAllotted(blockStatus === 'Allotted');
+        setHasSubmittedApplication(applicationData !== null && ['Pending', 'Accepted'].includes(status));
+        setIsAllotmentAccepted(applicationData !== null && status === 'Accepted' && provisional === 'Accepted');
+        setHasUploadedHostelReceipt(!!hostelReceipt);
+        setHasUploadedMessReceipt(!!messReceipt);
+        setHostelFees(applicationData?.hostel_fees || null);
+        setMessFees(applicationData?.mess_fees || null);
 
-        setHasUploadedReceipt(
-          data !== null && data.hostel_fee_receipt_url !== null
-        );
+        if (
+          status === 'Accepted' &&
+          provisional === 'Accepted' &&
+          applicationData?.final_allotment_status === true &&
+          applicationData?.room_id &&
+          applicationData?.hostel_id
+        ) {
+          const { data: roomData } = await supabase
+            .from('room_db')
+            .select('number')
+            .eq('room_id', applicationData.room_id)
+            .single();
 
-        if (data && data.allotment_status === 'Accepted') {
+          const { data: hostelData } = await supabase
+            .from('hostel_db')
+            .select('name')
+            .eq('hostel_id', applicationData.hostel_id)
+            .single();
+
           setAllotmentDetails({
-            building_name: data.building_name || 'Not assigned',
-            room_number: data.room_number || 'Not assigned',
+            building_name: hostelData?.name || 'Not assigned',
+            room_number: roomData?.number?.toString() || 'Not assigned',
           });
         }
-
       } catch (error) {
         console.error('Unexpected error checking hostel application:', error);
         setError('An unexpected error occurred. Please try again later.');
@@ -96,45 +117,58 @@ export default function HostelContent({ user }: HostelContentProps) {
       <div className="p-6 w-full space-y-6">
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-6">Hostel Application</h2>
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
             <strong className="font-bold">Success!</strong>
             <span className="block sm:inline"> Your hostel application has been submitted successfully.</span>
           </div>
         </div>
 
-        {isAllotmentAccepted && (
+        {isAllotmentAccepted && isBlockAllotted && (
           <>
-            
-
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-6">Upload Payment Receipt</h2>
-              {hasUploadedReceipt ? (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+              <h2 className="text-xl font-semibold mb-6">Upload Hostel Fee Receipt</h2>
+              {hostelFees !== null && !hasUploadedHostelReceipt && (
+                <p className="text-lg font-medium">Hostel Fees: ₹{hostelFees}</p>
+              )}
+              {hasUploadedHostelReceipt ? (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
                   <strong className="font-bold">Success!</strong>
                   <span className="block sm:inline"> Your hostel fee receipt has been submitted successfully.</span>
                 </div>
               ) : (
-                <UploadHostelFeeReceipt user={user} />
+                <HostelPaymentUpload user={user} onUploadSuccess={() => setHasUploadedHostelReceipt(true)} />
               )}
+              
             </div>
 
-
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-6">Allotment Details</h2>
-              {allotmentDetails ? (
+              <h2 className="text-xl font-semibold mb-6">Upload Mess Fee Receipt</h2>
+              {messFees !== null && !hasUploadedMessReceipt && (
+                <p className="text-lg font-medium">Mess Fees: ₹{messFees}</p>
+              )}
+              {hasUploadedMessReceipt ? (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+                  <strong className="font-bold">Success!</strong>
+                  <span className="block sm:inline"> Your mess fee receipt has been submitted successfully.</span>
+                </div>
+              ) : (
+                <MessPaymentUpload user={user} onUploadSuccess={() => setHasUploadedMessReceipt(true)} />
+              )}
+              
+            </div>
+
+            {allotmentDetails && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-6">Allotment Details</h2>
                 <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative">
                   <strong className="font-bold">Your Room Allotment:</strong>
                   <div className="mt-2">
-                    <p>Building: {allotmentDetails.building_name}</p>
+                    <p>Hostel: {allotmentDetails.building_name}</p>
                     <p>Room Number: {allotmentDetails.room_number}</p>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
-                  <span>Allotment details are being processed.</span>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </>
         )}
       </div>

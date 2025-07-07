@@ -62,7 +62,7 @@ export default function GrievancesPage() {
         // This is just a client-side check to log if there might be an issue
         // Real policy changes must be done on the server or directly in Supabase
         const { error } = await supabase
-          .from('grievances')
+          .from('grievances_db')
           .select('count()')
           .limit(1);
           

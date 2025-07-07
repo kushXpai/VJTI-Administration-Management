@@ -21,7 +21,7 @@ const ApplicationsList: React.FC<ApplicationsListProps> = ({
         <ApplicationCard
           key={application.id}
           application={application}
-          studentName={getStudentName(application.id)}
+          studentName={getStudentName(application.student_id)}
           updateStatus={updateStatus}
         />
       ))}

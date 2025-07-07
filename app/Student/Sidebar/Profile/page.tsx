@@ -1,3 +1,4 @@
+
 // app/Student/Sidebar/Profile/page.tsx
 
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
