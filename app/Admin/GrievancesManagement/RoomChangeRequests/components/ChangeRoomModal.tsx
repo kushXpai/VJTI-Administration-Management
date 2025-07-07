@@ -40,7 +40,10 @@ const ChangeRoomModal = ({ isOpen, onClose, student }: ChangeRoomModalProps) => 
 
   useEffect(() => {
     const fetchRooms = async () => {
-      if (!selectedHostel) return setRooms([]);
+      if (!selectedHostel) {
+        setRooms([]);
+        return;
+      }
       const { data } = await supabase.from('room_db').select('room_id, number').eq('hostel_id', selectedHostel);
       if (data) setRooms(data);
     };
@@ -48,9 +51,19 @@ const ChangeRoomModal = ({ isOpen, onClose, student }: ChangeRoomModalProps) => 
   }, [selectedHostel]);
 
   const handleRoomChange = async () => {
-    if (!selectedRoom) return toast.error('Please select a room');
+    if (!selectedRoom) {
+      toast.error('Please select a room');
+      return;
+    }
+
     const success = await changeRoom(student.id, selectedRoom, selectedHostel);
-    success ? (toast.success('Room changed successfully'), onClose()) : toast.error(error || 'Failed to change room');
+
+    if (success) {
+      toast.success('Room changed successfully');
+      onClose();
+    } else {
+      toast.error(error || 'Failed to change room');
+    }
   };
 
   return (
@@ -60,7 +73,10 @@ const ChangeRoomModal = ({ isOpen, onClose, student }: ChangeRoomModalProps) => 
       className="max-w-md mx-auto mt-20 p-6 bg-white rounded-md shadow-lg"
       overlayClassName="fixed inset-0 bg-black bg-opacity-50"
     >
-      <h2 className="text-xl font-bold mb-4 text-[#800000]">Change Room for {student.name}</h2>
+      <h2 className="text-xl font-bold mb-4 text-[#800000]">
+        Change Room for {student.name}
+      </h2>
+
       <div className="mb-4 text-gray-700">
         <p className="text-sm mb-1">Current Hostel: {student.hostel_id || 'N/A'}</p>
         <p className="text-sm mb-3">Current Room: {student.room_id || 'N/A'}</p>
@@ -74,7 +90,9 @@ const ChangeRoomModal = ({ isOpen, onClose, student }: ChangeRoomModalProps) => 
       >
         <option value="">-- Keep Same Hostel --</option>
         {hostels.map(h => (
-          <option key={h.hostel_id} value={h.hostel_id}>{h.name}</option>
+          <option key={h.hostel_id} value={h.hostel_id}>
+            {h.name}
+          </option>
         ))}
       </select>
 
@@ -86,7 +104,9 @@ const ChangeRoomModal = ({ isOpen, onClose, student }: ChangeRoomModalProps) => 
       >
         <option value="">-- Select Room --</option>
         {rooms.map(r => (
-          <option key={r.room_id} value={r.room_id}>Room {r.number}</option>
+          <option key={r.room_id} value={r.room_id}>
+            Room {r.number}
+          </option>
         ))}
       </select>
 
