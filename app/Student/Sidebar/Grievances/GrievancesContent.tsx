@@ -133,7 +133,6 @@
 // }
 
 
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -175,7 +174,6 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
   const [grievances, setGrievances] = useState<Grievance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'list' | 'new'>('list');
-  const [currentDate, setCurrentDate] = useState<string>('');
 
   const fetchGrievances = useCallback(async () => {
     if (!user?.id) {
@@ -218,14 +216,6 @@ export default function GrievancesContent({ user }: GrievancesContentProps) {
   }, [user?.id]);
 
   useEffect(() => {
-    const now = new Date();
-    setCurrentDate(now.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }));
-
     if (user?.id) {
       fetchGrievances();
     }
